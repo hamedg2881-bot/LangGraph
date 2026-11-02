@@ -24,6 +24,15 @@ This inventory tracks project files created or changed on the DGX Spark host. Sn
 | app/api/admin_routes.py | Registry administrative endpoints | Pending exact snapshot |
 | app/main.py | FastAPI lifespan and router registration | Pending exact snapshot |
 
+## Dynamo deployment snapshots
+
+| Host path | Purpose | Repository snapshot |
+|---|---|---|
+| /opt/ai/dynamo/deploy/compose.vision38.yaml | Active Qwen 3.8-VL worker service definition | deployment/compose.vision38.yaml |
+| /opt/ai/dynamo/deploy/compose.gateway.yaml | Active Dynamo frontend service definition | deployment/compose.gateway.yaml |
+| /opt/ai/dynamo/deploy/compose.yaml | Base etcd/NATS and shared network definitions | Pending exact retrieval |
+| /opt/ai/dynamo/deploy/compose.vision.yaml | Older/different Vision overlay; not the active Vision38 stack | Not archived as active deployment |
+
 ## Routing patch
 
 | Repository path | Purpose | Host status |
