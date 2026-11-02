@@ -22,6 +22,12 @@ This inventory tracks project files created or changed on the DGX Spark host. Sn
 | `app/api/admin_routes.py` | Registry administrative endpoints | Pending exact snapshot |
 | `app/main.py` | FastAPI lifespan and router registration | Pending exact snapshot |
 
+## Routing patch
+
+| Repository path | Purpose | Host status |
+|---|---|---|
+| `patches/request-scoped-routing.patch` | Request-scoped capability/model selection changes for graph and API | Prepared; not applied or tested |
+
 ## Host configuration
 
 | Host path | Purpose | Repository handling |
