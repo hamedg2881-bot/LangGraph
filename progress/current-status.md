@@ -4,7 +4,7 @@ Last verified: 2026-11-02
 
 ## Agent deployment
 
-- langgraph-agent.service restarted successfully after request-scoped routing changes.
+- langgraph-agent.service was restarted successfully after request-scoped routing changes.
 - Service state after restart: active.
 - GET /health returned HTTP 200 with {"status":"ok"}.
 - The running API completed a real Persian text chat request with HTTP 200.
@@ -14,7 +14,7 @@ Last verified: 2026-11-02
 
 - PostgreSQL Registry connection verified.
 - Registry tables remain separate from LangGraph Checkpointer tables.
-- qwen38-vl is now approved and enabled, with capabilities chat and vision.
+- qwen38-vl is approved and enabled, with capabilities chat and vision.
 - Runtime discovery from Dynamo returned qwen38-vl.
 - No model download, installation, worker activation, or Dynamo configuration change was performed as part of Registry approval.
 
@@ -35,29 +35,30 @@ Last verified: 2026-11-02
   - Returns HTTP 503 when no eligible model exists.
   - Passes the selected model ID alongside the existing thread_id.
   - Both streaming and non-streaming graph calls use the same runtime config.
+  - GET /v1/models now returns only the logical Auto model without querying Dynamo.
+- Open WebUI can use the stable logical model name Auto; actual model selection remains request-scoped inside LangGraph.
 - The client-supplied model name does not bypass Registry eligibility.
-- /v1/models has not yet been changed to return only logical Auto; this remains a separate follow-up.
 
 ## Verification performed
 
-- python3 -m compileall -q app succeeded.
-- Imports of app.model_selector, app.graph.chat, and app.api.routes succeeded.
+- python3 -m compileall -q app succeeded before the Auto model-list change.
+- Imports of app.model_selector, app.graph.chat, and app.api.routes succeeded before the Auto model-list change.
 - Router import exposed 2 routes.
 - Direct selector test: chat → qwen38-vl; vision → qwen38-vl.
-- Service restart completed; service remained active and health endpoint returned HTTP 200.
+- Service restart completed before the Auto model-list change; health endpoint returned HTTP 200.
 - Real non-streaming text chat returned HTTP 200 and the expected Persian response.
 - Real image request returned HTTP 200 and correctly answered Red.
+- The Auto model-list change is archived but has not yet been applied or verified on the host.
 
 ## Source snapshot status
 
-- Exact current snapshots archived: source/app/model_selector.py and source/app/graph/chat.py.
-- The exact current app/api/routes.py source is running and tested, but its complete contents still need to be retrieved from the host before archiving a source snapshot.
-- The patch artifact is not a substitute for a complete source snapshot.
+- Exact current snapshots archived: source/app/model_selector.py, source/app/graph/chat.py, source/app/api/routes.py, and source/app/api/schemas.py.
 - Other source files remain pending exact retrieval as listed in source/FILE_INVENTORY.md.
 
 ## Next actions
 
-1. Retrieve and archive the exact current app/api/routes.py source.
-2. Add focused tests for coding classification and no-eligible-model behavior.
-3. Decide separately whether /v1/models should expose only Auto.
-4. Continue preserving conversation thread IDs and PostgreSQL Checkpointer data.
+1. Apply the archived Auto model-list change to app/api/routes.py on the DGX Spark host.
+2. Compile and verify GET /v1/models returns exactly one model with id Auto.
+3. Restart langgraph-agent.service with explicit user approval, then verify health and Auto chat behavior.
+4. Add focused tests for coding classification and no-eligible-model behavior.
+5. Continue preserving conversation thread IDs and PostgreSQL Checkpointer data.
