@@ -39,6 +39,16 @@ Last verified: 2026-11-02
 - Open WebUI can use the stable logical model name Auto; actual model selection remains request-scoped inside LangGraph.
 - The client-supplied model name does not bypass Registry eligibility.
 
+## Logical Auto endpoint — applied and verified
+
+- Updated app/api/routes.py on the host so GET /v1/models returns only Auto.
+- Application compile and direct ModelList assertion passed.
+- Restarted langgraph-agent.service with user approval; service state is active.
+- GET /health returned {\"status\":\"ok\"}.
+- GET /v1/models returned exactly one model: Auto, owned_by langgraph-agent.
+- A real POST /v1/chat/completions request using model=Auto returned the expected Persian response with HTTP success.
+- Runtime selection remains request-scoped through Registry and Dynamo.
+
 ## Verification performed
 
 - python3 -m compileall -q app succeeded before the Auto model-list change.
@@ -48,7 +58,7 @@ Last verified: 2026-11-02
 - Service restart completed before the Auto model-list change; health endpoint returned HTTP 200.
 - Real non-streaming text chat returned HTTP 200 and the expected Persian response.
 - Real image request returned HTTP 200 and correctly answered Red.
-- The Auto model-list change is archived but has not yet been applied or verified on the host.
+- Applied the Auto model-list change on the host, compiled the application, and verified the endpoint returns exactly one model with id Auto.
 
 ## Source snapshot status
 
@@ -59,6 +69,6 @@ Last verified: 2026-11-02
 
 1. Apply the archived Auto model-list change to app/api/routes.py on the DGX Spark host.
 2. Compile and verify GET /v1/models returns exactly one model with id Auto.
-3. Restart langgraph-agent.service with explicit user approval, then verify health and Auto chat behavior.
+3. Restarted langgraph-agent.service with user approval; health returned HTTP 200 and GET /v1/models returned only Auto. A real non-streaming chat request with model=Auto returned HTTP success and the expected Persian response.
 4. Add focused tests for coding classification and no-eligible-model behavior.
 5. Continue preserving conversation thread IDs and PostgreSQL Checkpointer data.
