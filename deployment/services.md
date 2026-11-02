@@ -30,6 +30,15 @@
 - Frontend publishes container port 8000 as host port 8013.
 - Base compose.yaml is referenced by the active containers but its exact contents are not yet archived.
 
+
+### Multi-model lifecycle target
+- Long-term target is multiple approved models with resource-aware loading/unloading, not manual Compose switching.
+- Registry approval and enablement must remain independent of worker residency.
+- A Model Manager will coordinate demand loading, memory budgeting, request leases, safe idle eviction, and queueing.
+- The deployed Dynamo 1.6.1 lifecycle/control capabilities must be inspected before choosing the worker start/stop adapter.
+- The base file deployment/compose.yaml is now archived. It defines the dormant Coder worker and publishes host port 8013; the gateway overlay also publishes 8013. These definitions must not both be started unchanged.
+- No worker was started or stopped as part of documenting this direction.
+
 ## Related services to preserve
 | Service | Port | Notes |
 |---|---:|---|
