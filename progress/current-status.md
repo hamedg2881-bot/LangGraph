@@ -37,6 +37,14 @@ Last verified: 2026-11-02
 - Admin authentication is working.
 - Admin list response shape is `{"data": [...]}`.
 
+## Additional verification — 2026-11-02 12:39 local time
+
+- Authenticated `GET /admin/models` returned HTTP 200.
+- Response envelope confirmed as `{"data": [...]}`.
+- Confirmed row: `qwen38-vl | approval=pending | enabled=false | capabilities=[]`.
+- A local test-script parsing error was corrected; the API response itself was valid.
+- No model was approved, enabled, or assigned capabilities.
+
 ## Current next step
 
 Inspect the existing graph implementation and model factory, then design the smallest safe change to make model selection request-specific using Registry metadata and live Dynamo availability. Preserve the existing checkpointer and chat history. Do not approve/enable the model yet.
