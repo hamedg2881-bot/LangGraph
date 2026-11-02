@@ -31,6 +31,18 @@ Last verified: 2026-11-02
 - Frontend definition serves Dynamo HTTP on container port 8000, published as host port 8013.
 - No deployment configuration or running container was changed during this inspection.
 
+
+## Multi-model management target — newly confirmed
+- The desired operating model is multiple approved model choices with resource-aware residency, not manual one-model-at-a-time Compose switching.
+- Model approval/availability in Registry must be independent of whether model weights are currently resident in memory.
+- A Model Manager should load on demand, keep hot models resident within a safe memory budget, queue requests when needed, and unload only safely idle workers with no in-flight requests.
+- Coder was intentionally paused earlier to free resources for Qwen 3.8-VL; that was an interim operational choice, not the desired permanent architecture.
+- Long-term target: one shared Dynamo frontend/control plane with independently managed workers, subject to validation of Dynamo 1.6.1 lifecycle APIs.
+- Exact base Compose file is now archived at deployment/compose.yaml (commit b9033286fef97f80d6e564acb668b5d4a984246a).
+- The archived base Compose file defines a Coder worker that publishes host port 8013. The gateway overlay also publishes 8013; therefore the current definitions cannot simply be started together unchanged. This conflict must be resolved as part of the worker lifecycle redesign, not by starting the dormant service now.
+- No host deployment or running service was modified in this documentation step.
+
+
 ## Request-scoped routing
 - app/model_selector.py classifies requests as vision, coding, or chat.
 - Selection requires Registry approval, enablement, live Dynamo discovery, and matching capability.
