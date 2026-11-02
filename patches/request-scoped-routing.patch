@@ -2,7 +2,7 @@ diff --git a/app/model_selector.py b/app/model_selector.py
 new file mode 100644
 --- /dev/null
 +++ b/app/model_selector.py
-@@ -0,0 +1,83 @@
+@@ -0,0 +1,85 @@
 +import httpx
 +
 +
@@ -30,6 +30,8 @@ new file mode 100644
 +                inspect_content(child)
 +
 +    for message in messages:
++        if message.role not in ('user', 'human'):
++            continue
 +        inspect_content(message.content)
 +
 +    if has_image:
