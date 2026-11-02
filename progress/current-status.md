@@ -3,35 +3,33 @@
 Last verified: 2026-11-02
 
 ## Agent deployment
-- langgraph-agent.service is active after the approved restart.
+- langgraph-agent.service is active.
 - GET /health returned {"status":"ok"}.
 - GET /v1/models returns exactly one logical model: Auto.
-- A real non-streaming chat request with model=Auto returned the expected Persian response.
-- User tested Open WebUI and confirmed the Auto integration works.
+- A real text request through Auto returned the expected Persian response.
+- User confirmed Open WebUI works with Auto.
 
 ## Registry and runtime
-- qwen38-vl is approved and enabled in Registry with capabilities chat and vision.
-- Latest authenticated GET /admin/models returned qwen38-vl only, approved, enabled, capabilities chat and vision.
+- qwen38-vl is approved and enabled in Registry with chat and vision capabilities.
 - Latest Dynamo GET /v1/models returned qwen38-vl only.
-- qwen-coder is not currently present in Registry response or Dynamo runtime response.
+- qwen-coder is intentionally paused and is not currently present in Registry or Dynamo runtime.
 
-## Dynamo worker selection — intentional operational state
-- The Coder worker was intentionally taken out of the active deployment to free resources for the Qwen 3.8-VL worker. This is a planned sequencing decision, not an unexpected failure.
-- Latest Compose status: etcd and NATS running; dynamo-frontend running on host port 8013; dynamo-vllm-vision38 running.
-- Active runtime model exposed by the frontend is qwen38-vl.
-- Coder remains intentionally paused until Vision tests are complete. Do not start both heavy workers together without explicit approval and a verified resource plan.
+## Dynamo worker selection
+- Coder was intentionally taken out of the active deployment to free resources for Qwen 3.8-VL. This is deliberate sequencing, not an accidental outage.
+- Current containers: dynamo-etcd, dynamo-nats, dynamo-frontend, dynamo-vllm-vision38.
+- Frontend host port: 8013.
+- Active served model: qwen38-vl.
+- Heavy workers must remain sequential unless the user explicitly approves concurrent operation and a resource plan.
 
-## Actual Compose provenance — verified from container labels
-- dynamo-frontend labels identify project=deploy, service=dynamo-frontend, working_dir=/opt/ai/dynamo/deploy, config files:
-  /opt/ai/dynamo/deploy/compose.yaml
-  /opt/ai/dynamo/deploy/compose.vision38.yaml
-  /opt/ai/dynamo/deploy/compose.gateway.yaml
-- dynamo-vllm-vision38 labels identify project=deploy, service=dynamo-vllm-vision38, working_dir=/opt/ai/dynamo/deploy, config files:
-  /opt/ai/dynamo/deploy/compose.yaml
-  /opt/ai/dynamo/deploy/compose.vision38.yaml
-- Therefore the earlier comparison against compose.vision.yaml was the wrong Compose overlay for the currently running Vision38 deployment. The effective Compose files must be inspected using the exact label paths before any edits.
-- The effective service list from compose.yaml + compose.vision.yaml (etcd, nats, dynamo-vllm, dynamo-vllm-vision) does not describe the running deployment; it is not the active Vision38 stack.
-- No Compose files or containers were changed during this inspection.
+## Active Compose provenance and archived snapshots
+- Container labels identify dynamo-frontend as project deploy/service dynamo-frontend, using compose.yaml + compose.vision38.yaml + compose.gateway.yaml.
+- Container labels identify dynamo-vllm-vision38 as project deploy/service dynamo-vllm-vision38, using compose.yaml + compose.vision38.yaml.
+- Exact retrieved contents of compose.vision38.yaml and compose.gateway.yaml are now archived at deployment/compose.vision38.yaml and deployment/compose.gateway.yaml.
+- The exact base compose.yaml has not yet been retrieved or archived.
+- compose.vision.yaml is not the overlay used by the active Vision38 worker. Its service list must not be treated as the active deployment.
+- Vision38 definition mounts /opt/ai/models/Qwen3.8-27B-NVFP4 at /models/qwen38, serves qwen38-vl, max model length 32768, max sequences 2, batch tokens 4096, GPU memory utilization 0.35, FP8 KV cache, multimodal images limited to 2, videos disabled, shared memory 16 GB.
+- Frontend definition serves Dynamo HTTP on container port 8000, published as host port 8013.
+- No deployment configuration or running container was changed during this inspection.
 
 ## Request-scoped routing
 - app/model_selector.py classifies requests as vision, coding, or chat.
@@ -39,22 +37,20 @@ Last verified: 2026-11-02
 - app/graph/chat.py consumes the selected model ID from LangGraph RunnableConfig.
 - app/api/routes.py selects a model per request and passes it to streaming and non-streaming graph execution.
 - GET /v1/models exposes only logical Auto and does not query Dynamo.
-- Existing LangGraph graph and PostgreSQL checkpointer are preserved.
+- PostgreSQL Checkpointer and conversation thread IDs are preserved.
 
 ## Verification
 - Application compile passed after Auto endpoint change.
-- Direct ModelList test confirmed exactly one model with id Auto.
-- Approved service restart completed; systemd reports active.
 - GET /health returned {"status":"ok"}; GET /v1/models returned only Auto.
 - Real text request through Auto returned expected Persian response.
 - Earlier real vision request through Auto identified a generated red PNG as Red.
 - Direct selector checks previously resolved chat and vision to qwen38-vl.
 
 ## Next actions
-1. Inspect exact active Compose files compose.yaml, compose.vision38.yaml, and compose.gateway.yaml; archive exact deployment definitions in GitHub after retrieval.
+1. Retrieve and archive the exact base compose.yaml.
 2. Complete focused qwen38-vl chat and vision tests through LangGraph Auto.
-3. After Vision tests, plan and obtain approval for switching the active heavy worker to qwen-coder.
-4. Verify qwen-coder runtime discovery and Registry approval/capabilities before its tests.
+3. After Vision tests, obtain explicit approval before switching the active heavy worker to qwen-coder.
+4. Verify qwen-coder runtime discovery and Registry approval/capabilities before testing it.
 5. Preserve conversation thread IDs and PostgreSQL Checkpointer data.
 
 ## Operational rules
