@@ -17,20 +17,19 @@
 ## 2026-11-02 — Logical Auto endpoint
 - Updated GET /v1/models to return only the logical model Auto, independent of Dynamo availability.
 - Kept actual runtime selection in the LangGraph request path.
-- Archived exact app/api/routes.py and app/api/schemas.py snapshots.
 - Applied the change on the host, compiled the application, and verified GET /v1/models returns only Auto.
 - Restarted langgraph-agent.service with user approval; health returned HTTP 200.
-- Verified a real chat request with model=Auto returned the expected Persian response.
+- Verified a real chat request through model=Auto.
 - User tested Open WebUI and confirmed the Auto integration works.
 
 ## 2026-11-02 — Intentional Coder pause for Vision worker
 - Coder was intentionally paused to free resources for the Qwen 3.8-VL worker; this is planned sequencing, not an unexpected failure.
 - Latest Dynamo runtime and Registry responses expose qwen38-vl only; it is approved, enabled, and has chat and vision capabilities.
-- Latest Compose status shows etcd, NATS, dynamo-frontend, and dynamo-vllm-vision38 running.
 
-## 2026-11-02 — Active Compose provenance corrected
-- Container labels identify the active frontend Compose files as compose.yaml, compose.vision38.yaml, and compose.gateway.yaml.
-- Container labels identify the active Vision38 worker Compose files as compose.yaml and compose.vision38.yaml.
-- Confirmed that compose.vision.yaml is not the Vision38 overlay used to create the currently running containers; its service list does not represent the active stack.
-- No container or Compose configuration was changed during this inspection.
-- Next: inspect and archive the exact active Compose files before making any deployment changes.
+## 2026-11-02 — Active Compose provenance and snapshots
+- Container labels identify the frontend Compose files as compose.yaml, compose.vision38.yaml, and compose.gateway.yaml.
+- Container labels identify the Vision38 worker Compose files as compose.yaml and compose.vision38.yaml.
+- Archived the exact retrieved compose.vision38.yaml and compose.gateway.yaml contents under deployment/.
+- Updated the source inventory and operational status to identify the still-unarchived base compose.yaml.
+- Confirmed compose.vision.yaml is not the active Vision38 overlay.
+- No running service or deployment configuration was changed.
