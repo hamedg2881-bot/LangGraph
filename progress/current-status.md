@@ -37,14 +37,23 @@ Last verified: 2026-11-02
 - Admin authentication is working.
 - Admin list response shape is `{"data": [...]}`.
 
-## Additional verification — 2026-11-02 12:39 local time
+## Existing chat implementation inspected from prior source excerpts
 
-- Authenticated `GET /admin/models` returned HTTP 200.
-- Response envelope confirmed as `{"data": [...]}`.
-- Confirmed row: `qwen38-vl | approval=pending | enabled=false | capabilities=[]`.
-- A local test-script parsing error was corrected; the API response itself was valid.
-- No model was approved, enabled, or assigned capabilities.
+- `app/graph/chat.py` builds one compiled graph with one assistant node and currently captures a model created at graph construction.
+- `app/providers/dynamo.py` exposes `create_chat_model(model: str | None = None)`.
+- `app/api/routes.py` uses the same graph for streaming and non-streaming requests; the client model field is currently echoed and does not select the runtime model.
+- Existing thread ID derivation and checkpointer must be preserved.
+- Exact executable source snapshots are not yet committed in this repository; the prior inspection excerpts are the design reference, not a claim that the full source files are archived.
 
-## Current next step
+## Request routing design
 
-Inspect the existing graph implementation and model factory, then design the smallest safe change to make model selection request-specific using Registry metadata and live Dynamo availability. Preserve the existing checkpointer and chat history. Do not approve/enable the model yet.
+- Classify image input as `vision`, code/programming requests as `coding`, and other requests as `chat`.
+- Select only models that are approved, enabled, live-discoverable in Dynamo, and assigned the required capability.
+- Pass the selected model ID via LangGraph runtime configuration for both `ainvoke` and `astream`.
+- Reuse the existing compiled graph and PostgreSQL checkpointer.
+- Do not trust the client-supplied model ID to bypass Registry policy.
+- Keep `qwen38-vl` pending, disabled, and without capabilities until explicitly configured.
+
+## Next action
+
+Capture only the relevant source sections with a compact, line-limited command, then prepare exact GitHub source snapshots and the implementation patch. No server modification or service restart has been performed for this routing stage.
