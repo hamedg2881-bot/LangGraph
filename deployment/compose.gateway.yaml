@@ -1,0 +1,34 @@
+services:
+  dynamo-frontend:
+    image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.6.1
+    container_name: dynamo-frontend
+    restart: "no"
+    entrypoint: ["python"]
+    command:
+      - -m
+      - dynamo.frontend
+      - --http-host
+      - 0.0.0.0
+      - --http-port
+      - "8000"
+    environment:
+      DYN_DISCOVERY_BACKEND: etcd
+      DYN_EVENT_PLANE: nats
+      ETCD_ENDPOINTS: http://etcd:2379
+      NATS_SERVER: nats://nats:4222
+    ports:
+      - "8013:8000"
+    depends_on:
+      etcd:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    networks:
+      - dynamo-backplane
+      - ai-network
+
+networks:
+  dynamo-backplane:
+    name: dynamo-backplane
+  ai-network:
+    external: true
