@@ -1,0 +1,103 @@
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.6.1
+    container_name: dynamo-etcd
+    restart: unless-stopped
+    command:
+      - etcd
+      - --name=etcd
+      - --data-dir=/etcd-data
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-advertise-peer-urls=http://etcd:2380
+      - --initial-cluster=etcd=http://etcd:2380
+      - --initial-cluster-state=new
+    volumes:
+      - etcd-data:/etcd-data
+    networks:
+      - dynamo-backplane
+    healthcheck:
+      test: ["CMD", "etcdctl", "--endpoints=http://127.0.0.1:2379", "endpoint", "health"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  nats:
+    image: nats:2.11.4
+    container_name: dynamo-nats
+    restart: unless-stopped
+    command: ["-c", "/etc/nats/nats-server.conf"]
+    volumes:
+      - ./nats-server.conf:/etc/nats/nats-server.conf:ro
+      - nats-data:/data
+    networks:
+      - dynamo-backplane
+
+  dynamo-vllm:
+    image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.6.1
+    container_name: dynamo-vllm
+    restart: unless-stopped
+    init: true
+    entrypoint: ["/bin/bash"]
+    working_dir: /workspace/dynamo/examples/backends/vllm
+    command:
+      - /workspace/agg-production.sh
+      - --model
+      - /models/qwen-coder
+      - --served-model-name
+      - qwen-coder
+      - --max-num-batched-tokens
+      - "8192"
+      - --gpu-memory-utilization
+      - "0.55"
+      - --kv-cache-dtype
+      - fp8
+      - --enable-chunked-prefill
+      - --enable-prefix-caching
+      - --trust-remote-code
+      - --dyn-tool-call-parser
+      - qwen3_coder
+    environment:
+      DYN_HTTP_HOST: 0.0.0.0
+      DYN_HTTP_PORT: 8000
+      DYN_SYSTEM_PORT: 8081
+      DYN_DISCOVERY_BACKEND: etcd
+      DYN_EVENT_PLANE: nats
+      ETCD_ENDPOINTS: http://etcd:2379
+      NATS_SERVER: nats://nats:4222
+      MAX_MODEL_LEN: "65536"
+      MAX_CONCURRENT_SEQS: "8"
+    ports:
+      - "8013:8000"
+    gpus: all
+    shm_size: 16gb
+    volumes:
+      - /opt/ai/dynamo/source:/workspace/dynamo:ro
+      - /opt/ai/models/Qwen3-Coder-Next-NVFP4-GB10:/models/qwen-coder:ro
+      - ./agg-production.sh:/workspace/agg-production.sh:ro
+    depends_on:
+      etcd:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    networks:
+      dynamo-backplane:
+      ai-network:
+        aliases:
+          - dynamo-vllm
+    logging:
+      driver: json-file
+      options:
+        max-size: 50m
+        max-file: "5"
+
+networks:
+  dynamo-backplane:
+    name: dynamo-backplane
+  ai-network:
+    external: true
+
+volumes:
+  etcd-data:
+  nats-data:
