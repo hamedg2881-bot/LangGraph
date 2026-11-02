@@ -6,8 +6,8 @@ This inventory tracks project files created or changed on the DGX Spark host. Sn
 
 | Host path | Purpose | Repository snapshot |
 |---|---|---|
-| app/model_selector.py | Request capability classification and eligible model selection | Pending exact snapshot |
-| app/graph/chat.py | Compiled LangGraph chat graph and request-scoped model invocation | Pending exact snapshot |
+| app/model_selector.py | Request capability classification and eligible model selection | source/app/model_selector.py |
+| app/graph/chat.py | Compiled LangGraph chat graph and request-scoped model invocation | source/app/graph/chat.py |
 | app/api/routes.py | OpenAI-compatible chat and model-list endpoints | Pending exact snapshot |
 | app/providers/dynamo.py | Dynamo-backed LangChain chat model factory | Pending exact snapshot |
 
