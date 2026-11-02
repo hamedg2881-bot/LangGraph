@@ -15,11 +15,23 @@
 11. Do not download/install/load/activate models through Registry.
 12. Preserve Code Intelligence (8200), AstraMap (8300), Control Center (5090), and existing profile behavior.
 13. Keep heavy model workers from competing for unified memory.
+14. Model selection is request-scoped. Pass the selected model ID through LangGraph runtime configuration; do not rebuild the graph or replace the checkpointer per request.
+15. The client-supplied `model` value must not bypass Registry approval, enablement, capability, or live-availability checks.
+16. Perform live Dynamo discovery for selection and require all Registry eligibility conditions before selecting a model.
+17. Classify requests into the required capability categories: `vision` when image input is present, `coding` for programming/code requests, and `chat` as the general fallback. Do not automatically grant capabilities to discovered models.
+18. Keep `/v1/models` unchanged until request routing is implemented and tested; only then expose the logical `Auto` model.
+
+## Request routing implementation plan
+
+- Reuse the existing compiled graph and PostgreSQL checkpointer.
+- Update the graph node to read the selected model ID from LangGraph `RunnableConfig` and instantiate the Dynamo chat model for that request.
+- The API route resolves the request capability, reads Registry candidates, checks live Dynamo model discovery, and selects only an approved + enabled model with the required capability.
+- Pass the selected model ID alongside the existing conversation `thread_id` in both streaming and non-streaming graph calls.
+- Return a clear selection error when no eligible model exists; do not silently fall back to an unapproved or incapable model.
+- Preserve current conversation/thread ID derivation and message conversion.
 
 ## Deferred decisions
 
-- Exact classification and routing policy per request type.
-- Per-request graph/model construction strategy while preserving checkpointer state.
-- Final `Auto` response format and behavior for `/v1/models`.
+- Exact coding-request classifier signals and precedence for mixed image/code requests.
 - Runtime health validation beyond presence in Dynamo `/models`.
 - Admin UI and richer audit metadata.
