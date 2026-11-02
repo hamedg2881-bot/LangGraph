@@ -72,6 +72,16 @@ All admin routes require a separate `ADMIN_API_KEY` Bearer token. The key is sto
 - Existing `/v1/models` still exposes Dynamo model IDs; it has not yet been changed to `Auto`.
 - The default chat graph/model behavior has not yet been refactored for per-request model selection.
 
+## Request-scoped routing design
+
+- Reuse the existing compiled graph and PostgreSQL checkpointer.
+- Classify requests as `vision` when image input is present, `coding` for code/programming requests, and `chat` as the fallback.
+- Select only models that are approved, enabled, currently discoverable in Dynamo, and assigned the required capability.
+- Ignore client-supplied model IDs for policy selection; they must not bypass Registry eligibility.
+- Pass the selected model ID via LangGraph runtime configuration to both streaming and non-streaming graph execution.
+- Keep `/v1/models` unchanged until routing is implemented and tested; then expose only logical model `Auto`.
+- Do not automatically assign capabilities or approve/enable discovered models.
+
 ## Important workflow constraints
 
 - Work step by step; provide one command or one focused action at a time and wait for its output.
