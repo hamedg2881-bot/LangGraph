@@ -2,7 +2,7 @@ diff --git a/app/model_selector.py b/app/model_selector.py
 new file mode 100644
 --- /dev/null
 +++ b/app/model_selector.py
-@@ -0,0 +1,78 @@
+@@ -0,0 +1,84 @@
 +import httpx
 +
 +
@@ -86,7 +86,6 @@ new file mode 100644
 +    raise ModelSelectionError(
 +        f'No approved and enabled runtime model supports capability: {capability}'
 +    )
-
 diff --git a/app/graph/chat.py b/app/graph/chat.py
 --- a/app/graph/chat.py
 +++ b/app/graph/chat.py
@@ -96,7 +95,7 @@ diff --git a/app/graph/chat.py b/app/graph/chat.py
  from langgraph.graph import END, START, MessagesState, StateGraph
  
  from app.providers.dynamo import create_chat_model
-@@ -14,9 +15,12 @@
+@@ -14,6 +15,9 @@
  def build_chat_graph(checkpointer, model=None):
 -    chat_model = model or create_chat_model()
  
@@ -107,14 +106,13 @@ diff --git a/app/graph/chat.py b/app/graph/chat.py
 +            raise RuntimeError('A selected model_id is required')
 +        chat_model = create_chat_model(model_id)
          messages = [
-
 diff --git a/app/api/routes.py b/app/api/routes.py
 --- a/app/api/routes.py
 +++ b/app/api/routes.py
-@@ -8,6 +8,7 @@
+@@ -9,1 +9,2 @@
  from app.api.schemas import ChatCompletionRequest, ModelList, ModelObject
 +from app.model_selector import ModelSelectionError, select_model
-@@ -49,6 +50,15 @@
+@@ -49,3 +50,12 @@
  async def chat_completions(payload: ChatCompletionRequest, request: Request):
      if not payload.messages:
          raise HTTPException(status_code=400, detail='Messages cannot be empty')
@@ -127,7 +125,7 @@ diff --git a/app/api/routes.py b/app/api/routes.py
 +        )
 +    except ModelSelectionError as exc:
 +        raise HTTPException(status_code=503, detail=str(exc)) from exc
-@@ -82,1 +92,8 @@
+@@ -82,2 +91,7 @@
 -    config = {'configurable': {'thread_id': thread_id}}
 +    config = {
 +        'configurable': {
@@ -135,3 +133,4 @@ diff --git a/app/api/routes.py b/app/api/routes.py
 +            'model_id': selected_model_id,
 +        }
 +    }
+ 
