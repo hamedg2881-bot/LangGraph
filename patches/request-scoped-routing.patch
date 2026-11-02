@@ -2,7 +2,7 @@ diff --git a/app/model_selector.py b/app/model_selector.py
 new file mode 100644
 --- /dev/null
 +++ b/app/model_selector.py
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,83 @@
 +import httpx
 +
 +
@@ -95,7 +95,7 @@ diff --git a/app/graph/chat.py b/app/graph/chat.py
  from langgraph.graph import END, START, MessagesState, StateGraph
  
  from app.providers.dynamo import create_chat_model
-@@ -14,6 +15,9 @@
+@@ -14,5 +15,8 @@
  def build_chat_graph(checkpointer, model=None):
 -    chat_model = model or create_chat_model()
  
