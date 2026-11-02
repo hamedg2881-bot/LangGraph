@@ -9,33 +9,28 @@
 
 ## 2026-11-02 — Admin API verification
 - Confirmed authenticated GET /admin/models returns HTTP 200 with a data array.
-- Confirmed qwen38-vl was initially pending, disabled, and had no assigned capabilities.
+- Confirmed qwen38-vl is approved and enabled with chat and vision capabilities.
 
-## 2026-11-02 — Request-scoped model routing design
-- Recorded request capability categories: vision, coding, and chat.
-- Chose per-request model selection through LangGraph runtime configuration.
-- Preserved the existing compiled graph, PostgreSQL checkpointer, and conversation thread IDs.
-- Required Registry approval, enablement, live Dynamo discovery, and capability match before selection.
-- Deferred changing /v1/models to Auto until routing implementation and tests.
+## 2026-11-02 — Request-scoped model routing
+- Implemented per-request capability classification for vision, coding, and chat.
+- Added eligibility checks for Registry approval, enablement, live Dynamo discovery, and capability match.
+- Updated LangGraph chat invocation to use the selected model ID through RunnableConfig.
+- Preserved the existing graph, PostgreSQL checkpointer, and conversation thread IDs.
+- Verified real text and image requests through the agent.
 
-## 2026-11-02 — Request-scoped routing implemented and verified
-- Added app/model_selector.py for capability classification and Registry/Dynamo eligibility checks.
-- Updated the LangGraph chat node to consume the selected model ID from RunnableConfig.
-- Updated the chat API route to select a model per request and pass it to both streaming and non-streaming graph execution.
-- Approved and enabled qwen38-vl in Registry with chat and vision capabilities.
-- Verified selector results for chat and vision both resolve to qwen38-vl.
-- Restarted langgraph-agent.service with user approval; health check returned HTTP 200.
-- Verified a real Persian text chat request and a real image-understanding request both returned HTTP 200.
-
-## 2026-11-02 — Logical Auto model endpoint
+## 2026-11-02 — Logical Auto endpoint
 - Updated GET /v1/models to return only the logical model Auto, independent of Dynamo availability.
-- Kept runtime model selection in the chat request path, where Registry approval, enablement, live runtime discovery, and capability matching are enforced.
-- Archived the exact current app/api/routes.py and app/api/schemas.py source snapshots.
-- Host application and endpoint verification are pending user application and service restart.
+- Kept actual runtime selection in the LangGraph request path.
+- Archived exact app/api/routes.py and app/api/schemas.py snapshots.
+- Applied the change on the host, compiled the application, and verified GET /v1/models returns only Auto.
+- Restarted langgraph-agent.service with user approval; health returned HTTP 200.
+- Verified a real chat request with model=Auto returned the expected Persian response.
+- User tested Open WebUI and confirmed the Auto integration works.
 
-## 2026-11-02 — Logical Auto endpoint applied and verified
-- Applied the archived app/api/routes.py change on the DGX Spark host.
-- Compiled the application and verified the model-list response contains exactly one model, Auto.
-- Restarted langgraph-agent.service with user approval; service state is active and health returned HTTP 200.
-- Verified GET /v1/models exposes only Auto.
-- Verified a real non-streaming chat request using model=Auto returned the expected Persian response.
+## 2026-11-02 — Intentional Coder pause for Vision worker
+- Recorded that the Coder worker was intentionally taken out of the active deployment to free resources for the Qwen 3.8-VL worker; this was a planned sequencing decision, not an unexpected failure.
+- Latest Dynamo runtime discovery exposes qwen38-vl only.
+- Latest authenticated Registry response contains qwen38-vl only, approved and enabled with chat and vision capabilities.
+- Latest combined Compose status shows etcd, NATS, dynamo-frontend, and dynamo-vllm-vision38 running.
+- Recorded a discrepancy between service keys shown by grep in the named Compose files and service names in the combined Compose status. Effective Compose configuration must be inspected before changing deployment files.
+- No worker or Compose configuration was changed during this status update.
