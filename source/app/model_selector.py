@@ -33,7 +33,7 @@ def required_capability(messages):
 
     text = "\n".join(text_parts).lower()
     coding_signals = (
-        '\x60\x60\x60', "def ", "class ", "function ", "select ", "insert ", "update ",
+        "```", "def ", "class ", "function ", "select ", "insert ", "update ",
         "delete ", "python", "javascript", "typescript", "c#", "asp.net", "sql",
         "کدنویسی", "برنامه نویسی", "برنامه‌نویسی", "دیباگ", "کامپایل",
         "تابع", "کلاس", "کد بنویس", "کد را", "کد رو",
