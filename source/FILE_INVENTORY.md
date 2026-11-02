@@ -2,6 +2,14 @@
 
 This inventory tracks project files created or changed on the DGX Spark host. Snapshots are added only when their exact current contents have been retrieved and reviewed. Do not invent missing file contents.
 
+## Chat and routing implementation
+
+| Host path | Purpose | Repository snapshot |
+|---|---|---|
+| `app/graph/chat.py` | Compiled LangGraph chat graph and assistant node | Pending exact snapshot |
+| `app/api/routes.py` | OpenAI-compatible chat and model-list endpoints | Pending exact snapshot |
+| `app/providers/dynamo.py` | Dynamo-backed LangChain chat model factory | Pending exact snapshot |
+
 ## Registry implementation
 
 | Host path | Purpose | Repository snapshot |
