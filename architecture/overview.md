@@ -41,3 +41,29 @@ Registry tables are isolated by `model_registry_` prefix in the existing Postgre
 - Control Center: port 5090.
 - Agent API: port 8100.
 - Heavy model workers are managed according to the existing scenario/resource policy; do not start additional heavy workers for Registry work.
+
+## Multi-model residency management
+
+The target is a catalog of multiple approved models with resource-aware residency, rather than a single manually switched worker.
+
+### Model Manager responsibilities
+- Track each model's lifecycle state: registered, approved, unloaded, loading, ready, busy, unloading, or failed.
+- Track measured memory use and conservative load estimates, active request references, last-used time, and queue demand.
+- Load an eligible model on demand when the resource budget allows.
+- Keep frequently used models resident when doing so does not violate the configured memory reserve.
+- When memory is constrained, select only idle models with no active request references for safe unloading.
+- Queue requests when no safe eviction or load is currently possible; never terminate in-flight requests to reclaim memory.
+- Publish lifecycle state back to Registry/Agent and confirm live worker availability through Dynamo.
+
+### Resource policy
+- Distinguish model approval from residency. Unloaded models remain approved and available for future scheduling.
+- Budget for weights, KV cache, runtime overhead, multimodal activations, and temporary loading peaks.
+- Use hysteresis/minimum residency and cooldown windows to avoid repeatedly loading and unloading models under fluctuating demand.
+- Treat memory figures as measured estimates and validate actual worker startup and memory after each lifecycle action.
+
+### Runtime topology
+- Keep one shared Dynamo frontend, etcd, and NATS plane.
+- Run model workers as independently managed workers that register with the shared Dynamo discovery plane.
+- Do not expose a separate host-facing frontend port for each model worker.
+- Compose is bootstrap/deployment configuration, not the permanent model scheduler. A lifecycle adapter must be validated against the deployed Dynamo version before automation.
+
