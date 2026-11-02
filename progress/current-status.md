@@ -54,6 +54,15 @@ Last verified: 2026-11-02
 - Do not trust the client-supplied model ID to bypass Registry policy.
 - Keep `qwen38-vl` pending, disabled, and without capabilities until explicitly configured.
 
+## Routing patch prepared — not yet applied
+
+- Prepared `patches/request-scoped-routing.patch` from the previously inspected source excerpts.
+- The patch adds request capability detection (vision/coding/chat), live Dynamo discovery, and Registry eligibility filtering.
+- The graph receives `model_id` through `RunnableConfig`; the existing compiled graph, `thread_id`, and checkpointer remain in use.
+- Both streaming and non-streaming paths share the same selected-model config.
+- `qwen38-vl` remains pending/disabled with no capabilities, so current requests will correctly fail selection with HTTP 503 until an eligible model is approved, enabled, and assigned the required capability.
+- Patch has not been applied or tested against the host checkout. No server modification or service restart has occurred.
+
 ## Next action
 
-Capture only the relevant source sections with a compact, line-limited command, then prepare exact GitHub source snapshots and the implementation patch. No server modification or service restart has been performed for this routing stage.
+Validate the patch against the host checkout with `git apply --check` before applying it. After application, run compile/import and focused API tests before considering a service restart.
