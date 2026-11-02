@@ -11,12 +11,15 @@
 - [x] Restart Agent and verify startup.
 - [x] Verify health endpoint and unauthenticated admin rejection.
 - [x] Verify authenticated admin list returns HTTP 200.
+- [x] Inspect existing chat graph, Dynamo model factory, and API routing behavior from the previously supplied source excerpts.
+- [x] Define request-scoped model routing design while preserving the compiled graph and checkpointer.
 
 ## In progress
-- [ ] Inspect existing graph/model factory.
-- [ ] Integrate request classification and Registry-based model selection.
-- [ ] Preserve PostgreSQL checkpointer and conversation continuity.
-- [ ] Expose only `Auto` from `/v1/models` after routing is tested.
+- [ ] Capture exact source snapshots for graph, API routes, Dynamo provider, and Registry repository in GitHub.
+- [ ] Implement capability classification and Registry/Dynamo candidate selection.
+- [ ] Pass selected model ID through LangGraph runtime config for both streaming and non-streaming requests.
+- [ ] Test routing and conversation continuity without changing model approval state.
+- [ ] Expose only `Auto` from `/v1/models` after routing is verified.
 
 ## Later
 - [ ] Define and assign verified capabilities to each model.
