@@ -33,6 +33,17 @@ This inventory tracks project files created or changed on the DGX Spark host. Sn
 | /opt/ai/dynamo/deploy/compose.yaml | Base etcd/NATS and shared network definitions | Pending exact retrieval |
 | /opt/ai/dynamo/deploy/compose.vision.yaml | Older/different Vision overlay; not the active Vision38 stack | Not archived as active deployment |
 
+
+## Dynamo deployment snapshots
+
+| Host path | Purpose | Repository snapshot |
+|---|---|---|
+| /opt/ai/dynamo/deploy/compose.yaml | Base etcd/NATS and Coder worker definition | deployment/compose.yaml |
+| /opt/ai/dynamo/deploy/compose.vision38.yaml | Qwen 3.8-VL worker definition | deployment/compose.vision38.yaml |
+| /opt/ai/dynamo/deploy/compose.gateway.yaml | Shared Dynamo frontend definition | deployment/compose.gateway.yaml |
+| /opt/ai/dynamo/deploy/compose.vision.yaml | Older/different Vision overlay; not active Vision38 definition | Not archived as active deployment |
+
+
 ## Routing patch
 
 | Repository path | Purpose | Host status |
