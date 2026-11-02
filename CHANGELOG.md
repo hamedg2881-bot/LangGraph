@@ -32,3 +32,10 @@
 - Kept runtime model selection in the chat request path, where Registry approval, enablement, live runtime discovery, and capability matching are enforced.
 - Archived the exact current app/api/routes.py and app/api/schemas.py source snapshots.
 - Host application and endpoint verification are pending user application and service restart.
+
+## 2026-11-02 — Logical Auto endpoint applied and verified
+- Applied the archived app/api/routes.py change on the DGX Spark host.
+- Compiled the application and verified the model-list response contains exactly one model, Auto.
+- Restarted langgraph-agent.service with user approval; service state is active and health returned HTTP 200.
+- Verified GET /v1/models exposes only Auto.
+- Verified a real non-streaming chat request using model=Auto returned the expected Persian response.
