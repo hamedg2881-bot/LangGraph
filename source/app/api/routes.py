@@ -2,7 +2,6 @@ import json
 import time
 import uuid
 
-import httpx
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import StreamingResponse
 
@@ -14,36 +13,15 @@ router = APIRouter(prefix="/v1")
 
 @router.get("/models", response_model=ModelList)
 async def list_models(request: Request):
-    settings = request.app.state.settings
-
-    try:
-        async with httpx.AsyncClient(timeout=10) as client:
-            response = await client.get(
-                f"{settings.dynamo_base_url.rstrip('/')}/models",
-                headers={
-                    "Authorization": (
-                        f"Bearer {settings.dynamo_api_key.get_secret_value()}"
-                    )
-                },
+    return ModelList(
+        data=[
+            ModelObject(
+                id="Auto",
+                created=int(time.time()),
+                owned_by="langgraph-agent",
             )
-            response.raise_for_status()
-            data = response.json().get("data", [])
-
-        return ModelList(
-            data=[
-                ModelObject(
-                    id=item["id"],
-                    created=item.get("created", int(time.time())),
-                    owned_by=item.get("owned_by", "nvidia"),
-                )
-                for item in data
-            ]
-        )
-    except (httpx.HTTPError, ValueError, KeyError) as exc:
-        raise HTTPException(
-            status_code=502,
-            detail="Model provider unavailable",
-        ) from exc
+        ]
+    )
 
 
 @router.post("/chat/completions")
