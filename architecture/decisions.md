@@ -35,3 +35,16 @@
 - Exact coding-request classifier signals and precedence for mixed image/code requests.
 - Runtime health validation beyond presence in Dynamo `/models`.
 - Admin UI and richer audit metadata.
+
+## Multi-model residency and resource management — confirmed direction
+19. The system must support multiple registered/approved model workers; it must not require manual Compose edits to switch between Coder, Vision, and general chat.
+20. Separate model eligibility from model residency: a model can remain approved and selectable in Registry while its weights are unloaded from accelerator memory.
+21. Add a Model Manager responsible for worker lifecycle and residency decisions, using measured resource availability, per-model load footprint, active requests, queue depth, and recent usage.
+22. Load a requested model on demand when resource budget permits. If capacity is insufficient, queue the request and consider only safely idle/unreferenced workers as eviction candidates.
+23. Never unload a model with active requests or forcibly interrupt in-flight inference. Release only after the worker reports safe idle state.
+24. Use a configurable memory reserve for runtime overhead, KV cache, vision activations, and transient load peaks; do not allocate the full reported free memory to model weights.
+25. Keep Dynamo as the inference/runtime discovery layer, Registry as the approved catalog/policy layer, and LangGraph as the request orchestration layer. Model Manager coordinates lifecycle across them.
+26. The desired policy is multi-model availability with a bounded set of resident workers, not necessarily all model weights resident simultaneously.
+27. Before implementation, inspect the Dynamo worker lifecycle/control APIs supported by the deployed version and validate whether workers can be started/stopped independently while sharing one frontend, etcd, and NATS.
+28. Do not implement Compose-based worker switching as the long-term manager. Compose remains deployment/bootstrap configuration; Model Manager should use a controlled worker lifecycle adapter.
+29. No worker lifecycle behavior or deployment has been changed by recording this design direction.
