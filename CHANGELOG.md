@@ -19,3 +19,8 @@
 - Required Registry approval, enablement, live Dynamo discovery, and capability match before selection.
 - Deferred changing `/v1/models` to `Auto` until routing is implemented and tested.
 - No server code or runtime configuration changed in this documentation update.
+
+## 2026-11-02 — Request-scoped routing patch prepared
+- Added `patches/request-scoped-routing.patch` for capability classification, live Dynamo discovery, Registry eligibility filtering, and request-scoped graph configuration.
+- The patch preserves the existing graph/checkpointer and conversation thread ID.
+- Patch is pending host-side `git apply --check`; no production code or service was changed.
