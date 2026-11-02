@@ -28,3 +28,16 @@
 - [ ] Test text, vision, coding, and tool-use routes with eligible workers.
 - [ ] Improve runtime health checks beyond Dynamo model-list presence.
 - [ ] Add operational/admin documentation and automated tests.
+
+## Multi-model Model Manager — new priority
+- [ ] Archive and review the exact active base Compose definition and all active overlays.
+- [ ] Inspect Dynamo 1.6.1 worker lifecycle APIs and examples for independently starting/stopping workers registered to one shared frontend.
+- [ ] Define model lifecycle states and Registry fields separately from approval/enabled status.
+- [ ] Define resource telemetry: unified-memory free/used, per-worker resident footprint, KV-cache use, active sequences, load peak, and safe-idle state.
+- [ ] Define configurable memory reserve, per-model load estimates, queue policy, eviction scoring, hysteresis, and cooldown.
+- [ ] Implement a Model Manager service and a narrow Dynamo lifecycle adapter; do not use Compose edits as per-request scheduling.
+- [ ] Add concurrency protection so duplicate requests do not trigger duplicate model loads.
+- [ ] Add request leases/reference counts so no worker is unloaded while serving a request.
+- [ ] Test load, reuse, queue, safe unload, reload, and failure recovery with Coder and Vision sequentially before allowing concurrent residency.
+- [ ] Preserve Registry approvals and PostgreSQL conversation/checkpointer data across worker lifecycle transitions.
+
