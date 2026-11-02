@@ -22,6 +22,14 @@
 - Inspect exact active Compose files and archive their exact contents before editing or switching workers.
 - No Compose files or containers were changed during the provenance inspection.
 
+### Archived active Compose overlays
+- Exact active worker definition: deployment/compose.vision38.yaml.
+- Exact active frontend definition: deployment/compose.gateway.yaml.
+- Both files were copied from host output on 2026-11-02 and archived without operational edits.
+- Vision38 serves qwen38-vl from /models/qwen38, mapped read-only from /opt/ai/models/Qwen3.8-27B-NVFP4; max model length 32768, max sequences 2, max batched tokens 4096, GPU memory utilization 0.35, FP8 KV cache, multimodal images limited to 2 and videos disabled.
+- Frontend publishes container port 8000 as host port 8013.
+- Base compose.yaml is referenced by the active containers but its exact contents are not yet archived.
+
 ## Related services to preserve
 | Service | Port | Notes |
 |---|---:|---|
