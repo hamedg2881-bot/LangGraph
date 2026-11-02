@@ -33,3 +33,10 @@
 - Updated the source inventory and operational status to identify the still-unarchived base compose.yaml.
 - Confirmed compose.vision.yaml is not the active Vision38 overlay.
 - No running service or deployment configuration was changed.
+
+## 2026-11-02 — Multi-model resource-aware residency direction
+- User clarified the target is multiple available models with automatic memory-aware residency and switching, not permanent manual switching between Coder and Vision.
+- Recorded the Model Manager direction: on-demand loading, bounded resident set, active-request protection, safe idle eviction, request queueing, memory reserve, and load/unload hysteresis.
+- Archived the exact base compose.yaml as deployment/compose.yaml.
+- Noted a host-port collision in the current definitions: the base Coder service and gateway both publish host port 8013. Do not start the dormant Coder service unchanged alongside the gateway.
+- No runtime services or host configuration were changed.
