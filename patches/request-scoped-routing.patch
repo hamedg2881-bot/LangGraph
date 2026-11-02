@@ -93,7 +93,7 @@ diff --git a/app/graph/chat.py b/app/graph/chat.py
  from langchain_core.messages import SystemMessage
 +from langchain_core.runnables import RunnableConfig
  from langgraph.graph import END, START, MessagesState, StateGraph
- 
+ completion_id = f"chatcmpl-{uuid.uuid4().hex}"
  from app.providers.dynamo import create_chat_model
 @@ -14,5 +15,8 @@
  def build_chat_graph(checkpointer, model=None):
