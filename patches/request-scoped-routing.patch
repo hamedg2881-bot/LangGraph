@@ -19,8 +19,8 @@ new file mode 100644
 +        if isinstance(value, str):
 +            text_parts.append(value)
 +        elif isinstance(value, dict):
-+            kind = str(value.get('type', '')).lower()
-+            if kind in {'image', 'image_url', 'input_image'} or 'image_url' in value or 'image' in value:
++            kind = str(value.get("type", "")).lower()
++            if kind in {"image", "image_url", "input_image"} or "image_url" in value or "image" in value:
 +                has_image = True
 +            for child in value.values():
 +                if isinstance(child, (dict, list, str)):
@@ -30,21 +30,21 @@ new file mode 100644
 +                inspect_content(child)
 +
 +    for message in messages:
-+        if message.role not in ('user', 'human'):
++        if message.role not in ("user", "human"):
 +            continue
 +        inspect_content(message.content)
 +
 +    if has_image:
-+        return 'vision'
++        return "vision"
 +
-+    text = '\n'.join(text_parts).lower()
++    text = "\n".join(text_parts).lower()
 +    coding_signals = (
-+        '```', 'def ', 'class ', 'function ', 'select ', 'insert ', 'update ',
-+        'delete ', 'python', 'javascript', 'typescript', 'c#', 'asp.net', 'sql',
-+        'کدنویسی', 'برنامه نویسی', 'برنامه‌نویسی', 'دیباگ', 'کامپایل',
-+        'تابع', 'کلاس', 'کد بنویس', 'کد را', 'کد رو',
++        "```", "def ", "class ", "function ", "select ", "insert ", "update ",
++        "delete ", "python", "javascript", "typescript", "c#", "asp.net", "sql",
++        "کدنویسی", "برنامه نویسی", "برنامه‌نویسی", "دیباگ", "کامپایل",
++        "تابع", "کلاس", "کد بنویس", "کد را", "کد رو",
 +    )
-+    return 'coding' if any(signal in text for signal in coding_signals) else 'chat'
++    return "coding" if any(signal in text for signal in coding_signals) else "chat"
 +
 +
 +async def select_model(registry, settings, messages):
@@ -54,31 +54,33 @@ new file mode 100644
 +            response = await client.get(
 +                f"{settings.dynamo_base_url.rstrip('/')}/models",
 +                headers={
-+                    'Authorization':
-+                    f"Bearer {settings.dynamo_api_key.get_secret_value()}",
++                    "Authorization": (
++                        f"Bearer {settings.dynamo_api_key.get_secret_value()}"
++                    )
 +                },
 +            )
 +            response.raise_for_status()
-+            runtime_models = response.json().get('data', [])
++            runtime_models = response.json().get("data", [])
 +    except (httpx.HTTPError, ValueError, AttributeError, TypeError) as exc:
-+        raise ModelSelectionError('Model provider unavailable') from exc
++        raise ModelSelectionError("Model provider unavailable") from exc
 +
 +    runtime_ids = {
-+        item.get('id') for item in runtime_models
-+        if isinstance(item, dict) and item.get('id')
++        item.get("id")
++        for item in runtime_models
++        if isinstance(item, dict) and item.get("id")
 +    }
 +
 +    try:
 +        registry_models = await registry.list_models()
 +    except Exception as exc:
-+        raise ModelSelectionError('Model registry unavailable') from exc
++        raise ModelSelectionError("Model registry unavailable") from exc
 +
 +    for model in registry_models:
 +        model_id, approval_status, is_enabled, capabilities = (
 +            model[0], model[6], model[7], model[11] or []
 +        )
 +        if (
-+            approval_status == 'approved'
++            approval_status == "approved"
 +            and is_enabled
 +            and model_id in runtime_ids
 +            and capability in capabilities
@@ -86,7 +88,7 @@ new file mode 100644
 +            return model_id
 +
 +    raise ModelSelectionError(
-+        f'No approved and enabled runtime model supports capability: {capability}'
++        f"No approved and enabled runtime model supports capability: {capability}"
 +    )
 diff --git a/app/graph/chat.py b/app/graph/chat.py
 --- a/app/graph/chat.py
@@ -95,30 +97,36 @@ diff --git a/app/graph/chat.py b/app/graph/chat.py
  from langchain_core.messages import SystemMessage
 +from langchain_core.runnables import RunnableConfig
  from langgraph.graph import END, START, MessagesState, StateGraph
- completion_id = f"chatcmpl-{uuid.uuid4().hex}"
+ 
  from app.providers.dynamo import create_chat_model
-@@ -14,5 +15,8 @@
+@@ -14,9 +15,12 @@
+ 
+ 
  def build_chat_graph(checkpointer, model=None):
 -    chat_model = model or create_chat_model()
- 
+-
 -    async def call_model(state: MessagesState):
 +    async def call_model(state: MessagesState, config: RunnableConfig):
-+        model_id = config.get('configurable', {}).get('model_id')
++        model_id = config.get("configurable", {}).get("model_id")
 +        if not model_id:
-+            raise RuntimeError('A selected model_id is required')
++            raise RuntimeError("A selected model_id is required")
 +        chat_model = create_chat_model(model_id)
          messages = [
+             SystemMessage(content=SYSTEM_PROMPT),
+             *state["messages"],
 diff --git a/app/api/routes.py b/app/api/routes.py
 --- a/app/api/routes.py
 +++ b/app/api/routes.py
-@@ -9,1 +9,2 @@
+@@ -9,6 +9,7 @@
  from app.api.schemas import ChatCompletionRequest, ModelList, ModelObject
 +from app.model_selector import ModelSelectionError, select_model
-@@ -49,3 +50,12 @@
+ 
+ router = APIRouter(prefix="/v1")
+@@ -49,6 +50,15 @@
  async def chat_completions(payload: ChatCompletionRequest, request: Request):
      if not payload.messages:
-         raise HTTPException(status_code=400, detail='Messages cannot be empty')
-+
+         raise HTTPException(status_code=400, detail="Messages cannot be empty")
+ 
 +    try:
 +        selected_model_id = await select_model(
 +            request.app.state.registry,
@@ -127,11 +135,15 @@ diff --git a/app/api/routes.py b/app/api/routes.py
 +        )
 +    except ModelSelectionError as exc:
 +        raise HTTPException(status_code=503, detail=str(exc)) from exc
-@@ -82,1 +92,6 @@
--    config = {'configurable': {'thread_id': thread_id}}
++
+     conversation_id = (
+         payload.conversation_id
+         or payload.chat_id
+@@ -82,7 +92,12 @@
+-    config = {"configurable": {"thread_id": thread_id}}
 +    config = {
-+        'configurable': {
-+            'thread_id': thread_id,
-+            'model_id': selected_model_id,
++        "configurable": {
++            "thread_id": thread_id,
++            "model_id": selected_model_id,
 +        }
 +    }
