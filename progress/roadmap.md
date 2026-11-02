@@ -16,6 +16,7 @@
 
 ## In progress
 - [ ] Capture exact source snapshots for graph, API routes, Dynamo provider, and Registry repository in GitHub.
+- [x] Prepare a request-scoped routing patch in `patches/request-scoped-routing.patch` (not yet applied or tested on the host).
 - [ ] Implement capability classification and Registry/Dynamo candidate selection.
 - [ ] Pass selected model ID through LangGraph runtime config for both streaming and non-streaming requests.
 - [ ] Test routing and conversation continuity without changing model approval state.
