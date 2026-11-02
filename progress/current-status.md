@@ -4,65 +4,59 @@ Last verified: 2026-11-02
 
 ## Agent deployment
 
-- `langgraph-agent.service` restarted successfully after Registry integration.
-- PID observed after restart: `1299521`.
-- Uvicorn listening on `0.0.0.0:8100`.
-- Startup log: `Application startup complete`.
-- `GET /health`: HTTP 200, `{"status":"ok"}`.
-- `GET /admin/models` without credentials: HTTP 401.
-- `GET /admin/models` with the host-stored admin key: HTTP 200.
-- Admin key is loaded by application settings; observed length 64. Actual value is secret and is not recorded here.
+- langgraph-agent.service restarted successfully after request-scoped routing changes.
+- Service state after restart: active.
+- GET /health returned HTTP 200 with {"status":"ok"}.
+- The running API completed a real Persian text chat request with HTTP 200.
+- The running API completed a real image-understanding request with HTTP 200 and correctly identified a generated red PNG as "Red".
 
 ## Registry
 
 - PostgreSQL Registry connection verified.
-- Three tables created and verified:
-  - `model_registry_models`
-  - `model_registry_capabilities`
-  - `model_registry_approvals`
-- Registry currently contains one discovered model:
-  - ID: `qwen38-vl`
-  - display name: `qwen38-vl`
-  - provider: `nvidia`
-  - context length: `32768`
-  - approval: `pending`
-  - enabled: `false`
-  - capabilities: empty
-- No approval or enablement action has been performed.
-- Discovery sync previously registered this model from Dynamo.
+- Registry tables remain separate from LangGraph Checkpointer tables.
+- qwen38-vl is now approved and enabled, with capabilities chat and vision.
+- Runtime discovery from Dynamo returned qwen38-vl.
+- No model download, installation, worker activation, or Dynamo configuration change was performed as part of Registry approval.
 
-## API behavior
+## Request-scoped routing — implemented and running
 
-- `/v1/models` still returns raw Dynamo model `qwen38-vl`; the planned `Auto` abstraction is not implemented yet.
-- Admin authentication is working.
-- Admin list response shape is `{"data": [...]}`.
+- Added app/model_selector.py:
+  - Detects image input as vision.
+  - Uses coding-related text signals for coding.
+  - Uses chat as the fallback.
+  - Queries Dynamo /models at request time.
+  - Selects only a model that is approved, enabled, runtime-discoverable, and assigned the required capability.
+- Updated app/graph/chat.py:
+  - Reads model_id from LangGraph RunnableConfig.
+  - Creates the Dynamo chat model for the selected request model.
+  - Reuses the existing compiled graph and PostgreSQL checkpointer.
+- Updated app/api/routes.py:
+  - Selects the model before graph execution.
+  - Returns HTTP 503 when no eligible model exists.
+  - Passes the selected model ID alongside the existing thread_id.
+  - Both streaming and non-streaming graph calls use the same runtime config.
+- The client-supplied model name does not bypass Registry eligibility.
+- /v1/models has not yet been changed to return only logical Auto; this remains a separate follow-up.
 
-## Existing chat implementation inspected from prior source excerpts
+## Verification performed
 
-- `app/graph/chat.py` builds one compiled graph with one assistant node and currently captures a model created at graph construction.
-- `app/providers/dynamo.py` exposes `create_chat_model(model: str | None = None)`.
-- `app/api/routes.py` uses the same graph for streaming and non-streaming requests; the client model field is currently echoed and does not select the runtime model.
-- Existing thread ID derivation and checkpointer must be preserved.
-- Exact executable source snapshots are not yet committed in this repository; the prior inspection excerpts are the design reference, not a claim that the full source files are archived.
+- python3 -m compileall -q app succeeded.
+- Imports of app.model_selector, app.graph.chat, and app.api.routes succeeded.
+- Router import exposed 2 routes.
+- Direct selector test: chat → qwen38-vl; vision → qwen38-vl.
+- Service restart completed; service remained active and health endpoint returned HTTP 200.
+- Real non-streaming text chat returned HTTP 200 and the expected Persian response.
+- Real image request returned HTTP 200 and correctly answered Red.
 
-## Request routing design
+## Source snapshot status
 
-- Classify image input as `vision`, code/programming requests as `coding`, and other requests as `chat`.
-- Select only models that are approved, enabled, live-discoverable in Dynamo, and assigned the required capability.
-- Pass the selected model ID via LangGraph runtime configuration for both `ainvoke` and `astream`.
-- Reuse the existing compiled graph and PostgreSQL checkpointer.
-- Do not trust the client-supplied model ID to bypass Registry policy.
-- Keep `qwen38-vl` pending, disabled, and without capabilities until explicitly configured.
+- The exact current app/api/routes.py source is running and tested, but its complete contents still need to be retrieved from the host before archiving a source snapshot.
+- The patch artifact is not a substitute for a complete source snapshot.
+- Other source files remain pending exact retrieval unless explicitly listed in the source inventory.
 
-## Routing patch prepared — not yet applied
+## Next actions
 
-- Prepared `patches/request-scoped-routing.patch` from the previously inspected source excerpts.
-- The patch adds request capability detection (vision/coding/chat), live Dynamo discovery, and Registry eligibility filtering.
-- The graph receives `model_id` through `RunnableConfig`; the existing compiled graph, `thread_id`, and checkpointer remain in use.
-- Both streaming and non-streaming paths share the same selected-model config.
-- `qwen38-vl` remains pending/disabled with no capabilities, so current requests will correctly fail selection with HTTP 503 until an eligible model is approved, enabled, and assigned the required capability.
-- Patch has not been applied or tested against the host checkout. No server modification or service restart has occurred.
-
-## Next action
-
-Validate the patch against the host checkout with `git apply --check` before applying it. After application, run compile/import and focused API tests before considering a service restart.
+1. Retrieve and archive the exact current app/api/routes.py source.
+2. Add focused tests for coding classification and no-eligible-model behavior.
+3. Decide separately whether /v1/models should expose only Auto.
+4. Continue preserving conversation thread IDs and PostgreSQL Checkpointer data.

@@ -5,19 +5,19 @@ Last updated: 2026-11-02
 ## Project and host
 
 - Project: LangGraph Agent
-- Host: NVIDIA DGX Spark, hostname `spark-7ea3`
+- Host: NVIDIA DGX Spark, hostname spark-7ea3
 - OS: Ubuntu 26.04
-- Project directory: `/opt/ai/langgraph-agent`
-- Service: `langgraph-agent.service`
-- Agent API: port `8100`
-- Current active model exposed by Dynamo: `qwen38-vl` (Qwen3.8-27B-NVFP4)
-- PostgreSQL database: `langgraph`, schema `public`, user `langgraph`
+- Project directory: /opt/ai/langgraph-agent
+- Service: langgraph-agent.service
+- Agent API: port 8100
+- Current active model exposed by Dynamo: qwen38-vl (Qwen3.8-27B-NVFP4)
+- PostgreSQL database: langgraph, schema public, user langgraph
 
 ## Agreed architecture
 
-`Open WebUI → LangGraph Agent → NVIDIA Dynamo → Model Workers`
+Open WebUI → LangGraph Agent → NVIDIA Dynamo → Model Workers
 
-- Open WebUI will ultimately expose one logical model named `Auto`.
+- Open WebUI will ultimately expose one logical model named Auto.
 - LangGraph Agent classifies requests, selects a suitable model, manages conversation state, and coordinates tools.
 - Model Registry stores model metadata, capabilities, and administrative approval/enablement.
 - NVIDIA Dynamo owns model worker execution and runtime discovery.
@@ -31,14 +31,14 @@ Last updated: 2026-11-02
 ## Registry policy
 
 A model is selectable only when all conditions hold:
-1. Approval status is `approved`.
+1. Approval status is approved.
 2. Enablement is true.
 3. The model is currently discoverable/available from Dynamo.
 4. The model has the capability required by the request.
 
 Approval, enablement, and runtime availability are separate concepts:
-- Approval: `pending`, `approved`, `rejected`
-- Enablement: enabled/disabled
+- Approval: pending, approved, rejected.
+- Enablement: enabled/disabled.
 - Runtime: determined live from Dynamo; do not treat a stale stored value as authoritative.
 
 Dynamo synchronization:
@@ -50,37 +50,45 @@ Dynamo synchronization:
 
 ## Admin API
 
-- `GET /admin/models`
-- `POST /admin/models/sync`
-- `POST /admin/models/{id}/approve`
-- `POST /admin/models/{id}/reject`
-- `PATCH /admin/models/{id}`
-- `GET /admin/models/{id}/status`
-- `POST /admin/models/{id}/enable`
-- `POST /admin/models/{id}/disable`
+- GET /admin/models
+- POST /admin/models/sync
+- POST /admin/models/{id}/approve
+- POST /admin/models/{id}/reject
+- PATCH /admin/models/{id}
+- GET /admin/models/{id}/status
+- POST /admin/models/{id}/enable
+- POST /admin/models/{id}/disable
 
-All admin routes require a separate `ADMIN_API_KEY` Bearer token. The key is stored only on the host in `config/agent.env`, protected by file mode 600. Never copy the real value into this repository or logs.
+All admin routes require a separate ADMIN_API_KEY Bearer token. The key is stored only on the host in config/agent.env, protected by file mode 600. Never copy the real value into this repository or logs.
 
 ## Current implementation facts
 
-- Registry tables use the `model_registry_` prefix in the existing `langgraph` PostgreSQL database.
+- Registry tables use the model_registry_ prefix in the existing langgraph PostgreSQL database.
 - Checkpointer tables are separate and must remain untouched.
 - Psycopg 3 async pool is used for Registry access.
-- Registry database is opened in FastAPI lifespan and attached to `app.state`.
-- Registry schema initialization uses idempotent `CREATE TABLE IF NOT EXISTS`.
-- Existing chat routing has not yet been integrated with Registry selection.
-- Existing `/v1/models` still exposes Dynamo model IDs; it has not yet been changed to `Auto`.
-- The default chat graph/model behavior has not yet been refactored for per-request model selection.
+- Registry database is opened in FastAPI lifespan and attached to app.state.
+- Registry schema initialization uses idempotent CREATE TABLE IF NOT EXISTS.
+- The chat API now performs request-scoped model selection through the Registry and live Dynamo discovery.
+- The graph reads the selected model ID from LangGraph RunnableConfig; the same compiled graph and PostgreSQL checkpointer are reused.
+- /v1/models still exposes Dynamo model IDs; the planned Auto-only response has not yet been implemented.
 
-## Request-scoped routing design
+## Request-scoped routing — implemented
 
-- Reuse the existing compiled graph and PostgreSQL checkpointer.
-- Classify requests as `vision` when image input is present, `coding` for code/programming requests, and `chat` as the fallback.
+- Classify requests as vision when image input is present, coding for code/programming requests, and chat as the fallback.
 - Select only models that are approved, enabled, currently discoverable in Dynamo, and assigned the required capability.
 - Ignore client-supplied model IDs for policy selection; they must not bypass Registry eligibility.
 - Pass the selected model ID via LangGraph runtime configuration to both streaming and non-streaming graph execution.
-- Keep `/v1/models` unchanged until routing is implemented and tested; then expose only logical model `Auto`.
+- The currently approved/enabled model qwen38-vl has chat and vision capabilities.
+- No coding capability has been assigned to qwen38-vl; coding requests will not select it until an administrator explicitly assigns that capability.
 - Do not automatically assign capabilities or approve/enable discovered models.
+
+## Verification on 2026-11-02
+
+- Service restart succeeded; /health returned HTTP 200.
+- Selector test chose qwen38-vl for both chat and vision.
+- A real Persian text chat request completed successfully.
+- A real image-understanding request completed successfully and identified the dominant color as red.
+- The complete exact app/api/routes.py source must still be retrieved from the host before archiving.
 
 ## Important workflow constraints
 

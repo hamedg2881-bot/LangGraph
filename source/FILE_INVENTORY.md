@@ -6,36 +6,37 @@ This inventory tracks project files created or changed on the DGX Spark host. Sn
 
 | Host path | Purpose | Repository snapshot |
 |---|---|---|
-| `app/graph/chat.py` | Compiled LangGraph chat graph and assistant node | Pending exact snapshot |
-| `app/api/routes.py` | OpenAI-compatible chat and model-list endpoints | Pending exact snapshot |
-| `app/providers/dynamo.py` | Dynamo-backed LangChain chat model factory | Pending exact snapshot |
+| app/model_selector.py | Request capability classification and eligible model selection | Pending exact snapshot |
+| app/graph/chat.py | Compiled LangGraph chat graph and request-scoped model invocation | Pending exact snapshot |
+| app/api/routes.py | OpenAI-compatible chat and model-list endpoints | Pending exact snapshot |
+| app/providers/dynamo.py | Dynamo-backed LangChain chat model factory | Pending exact snapshot |
 
 ## Registry implementation
 
 | Host path | Purpose | Repository snapshot |
 |---|---|---|
-| `app/registry/schema.sql` | Registry tables and indexes | `database/schema.sql` |
-| `app/registry/database.py` | Async PostgreSQL pool and schema initialization | Pending exact snapshot |
-| `app/registry/repository.py` | Registry data access and administrative mutations | Pending exact snapshot |
-| `app/config/settings.py` | Application settings, including admin secret setting | Pending exact snapshot |
-| `app/api/admin_auth.py` | Bearer authentication dependency | Pending exact snapshot |
-| `app/api/admin_routes.py` | Registry administrative endpoints | Pending exact snapshot |
-| `app/main.py` | FastAPI lifespan and router registration | Pending exact snapshot |
+| app/registry/schema.sql | Registry tables and indexes | database/schema.sql |
+| app/registry/database.py | Async PostgreSQL pool and schema initialization | Pending exact snapshot |
+| app/registry/repository.py | Registry data access and administrative mutations | Pending exact snapshot |
+| app/config/settings.py | Application settings, including admin secret setting | Pending exact snapshot |
+| app/api/admin_auth.py | Bearer authentication dependency | Pending exact snapshot |
+| app/api/admin_routes.py | Registry administrative endpoints | Pending exact snapshot |
+| app/main.py | FastAPI lifespan and router registration | Pending exact snapshot |
 
 ## Routing patch
 
 | Repository path | Purpose | Host status |
 |---|---|---|
-| `patches/request-scoped-routing.patch` | Request-scoped capability/model selection changes for graph and API | Prepared; not applied or tested |
+| patches/request-scoped-routing.patch | Historical patch for request-scoped model routing | Applied and verified on host; retained as implementation history |
 
 ## Host configuration
 
 | Host path | Purpose | Repository handling |
 |---|---|---|
-| `config/agent.env` | Live environment variables and secrets | NEVER COMMIT |
-| `config/agent.env.example` | Sanitized environment template | `deployment/agent.env.example` after exact review |
-| `/etc/systemd/system/langgraph-agent.service` | Agent systemd unit | Pending sanitized snapshot |
-| `backups/pre-registry-20261102-120939` | Pre-Registry backup | Host-only; do not commit backup bundle |
+| config/agent.env | Live environment variables and secrets | NEVER COMMIT |
+| config/agent.env.example | Sanitized environment template | deployment/agent.env.example after exact review |
+| /etc/systemd/system/langgraph-agent.service | Agent systemd unit | Pending sanitized snapshot |
+| backups/pre-registry-20261102-120939 | Pre-Registry backup | Host-only; do not commit backup bundle |
 
 ## Important
 
