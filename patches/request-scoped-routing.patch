@@ -127,7 +127,7 @@ diff --git a/app/api/routes.py b/app/api/routes.py
 +        )
 +    except ModelSelectionError as exc:
 +        raise HTTPException(status_code=503, detail=str(exc)) from exc
-@@ -82,1 +91,6 @@
+@@ -82,1 +92,6 @@
 -    config = {'configurable': {'thread_id': thread_id}}
 +    config = {
 +        'configurable': {
