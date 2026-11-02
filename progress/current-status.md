@@ -50,9 +50,10 @@ Last verified: 2026-11-02
 
 ## Source snapshot status
 
+- Exact current snapshots archived: source/app/model_selector.py and source/app/graph/chat.py.
 - The exact current app/api/routes.py source is running and tested, but its complete contents still need to be retrieved from the host before archiving a source snapshot.
 - The patch artifact is not a substitute for a complete source snapshot.
-- Other source files remain pending exact retrieval unless explicitly listed in the source inventory.
+- Other source files remain pending exact retrieval as listed in source/FILE_INVENTORY.md.
 
 ## Next actions
 
