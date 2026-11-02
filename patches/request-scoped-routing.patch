@@ -2,7 +2,7 @@ diff --git a/app/model_selector.py b/app/model_selector.py
 new file mode 100644
 --- /dev/null
 +++ b/app/model_selector.py
-@@
+@@ -0,0 +1,78 @@
 +import httpx
 +
 +
@@ -58,7 +58,7 @@ new file mode 100644
 +            )
 +            response.raise_for_status()
 +            runtime_models = response.json().get('data', [])
-+    except (httpx.HTTPError, ValueError) as exc:
++    except (httpx.HTTPError, ValueError, AttributeError, TypeError) as exc:
 +        raise ModelSelectionError('Model provider unavailable') from exc
 +
 +    runtime_ids = {
@@ -90,11 +90,14 @@ new file mode 100644
 diff --git a/app/graph/chat.py b/app/graph/chat.py
 --- a/app/graph/chat.py
 +++ b/app/graph/chat.py
-@@
+@@ -1,4 +1,5 @@
  from langchain_core.messages import SystemMessage
 +from langchain_core.runnables import RunnableConfig
  from langgraph.graph import END, START, MessagesState, StateGraph
-@@
+ 
+ from app.providers.dynamo import create_chat_model
+@@ -14,9 +15,12 @@
+ def build_chat_graph(checkpointer, model=None):
 -    chat_model = model or create_chat_model()
  
 -    async def call_model(state: MessagesState):
@@ -108,10 +111,10 @@ diff --git a/app/graph/chat.py b/app/graph/chat.py
 diff --git a/app/api/routes.py b/app/api/routes.py
 --- a/app/api/routes.py
 +++ b/app/api/routes.py
-@@
+@@ -8,6 +8,7 @@
  from app.api.schemas import ChatCompletionRequest, ModelList, ModelObject
 +from app.model_selector import ModelSelectionError, select_model
-@@
+@@ -49,6 +50,15 @@
  async def chat_completions(payload: ChatCompletionRequest, request: Request):
      if not payload.messages:
          raise HTTPException(status_code=400, detail='Messages cannot be empty')
@@ -124,7 +127,7 @@ diff --git a/app/api/routes.py b/app/api/routes.py
 +        )
 +    except ModelSelectionError as exc:
 +        raise HTTPException(status_code=503, detail=str(exc)) from exc
-@@
+@@ -82,1 +92,8 @@
 -    config = {'configurable': {'thread_id': thread_id}}
 +    config = {
 +        'configurable': {
