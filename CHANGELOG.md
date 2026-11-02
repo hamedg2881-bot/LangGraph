@@ -26,5 +26,9 @@
 - Verified selector results for chat and vision both resolve to qwen38-vl.
 - Restarted langgraph-agent.service with user approval; health check returned HTTP 200.
 - Verified a real Persian text chat request and a real image-understanding request both returned HTTP 200.
-- The complete exact app/api/routes.py source snapshot remains pending retrieval from the host.
-- /v1/models still exposes the Dynamo model list; switching that endpoint to logical Auto remains a separate decision.
+
+## 2026-11-02 — Logical Auto model endpoint
+- Updated GET /v1/models to return only the logical model Auto, independent of Dynamo availability.
+- Kept runtime model selection in the chat request path, where Registry approval, enablement, live runtime discovery, and capability matching are enforced.
+- Archived the exact current app/api/routes.py and app/api/schemas.py source snapshots.
+- Host application and endpoint verification are pending user application and service restart.
