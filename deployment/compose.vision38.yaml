@@ -1,0 +1,56 @@
+services:
+  dynamo-vllm-vision38:
+    image: nvcr.io/nvidia/ai-dynamo/vllm-runtime:1.6.1
+    container_name: dynamo-vllm-vision38
+    restart: "no"
+    init: true
+    entrypoint: ["python"]
+    working_dir: /workspace/dynamo/examples/backends/vllm
+    command:
+      - -m
+      - dynamo.vllm
+      - --model
+      - /models/qwen38
+      - --served-model-name
+      - qwen38-vl
+      - --max-model-len
+      - "32768"
+      - --max-num-seqs
+      - "2"
+      - --max-num-batched-tokens
+      - "4096"
+      - --gpu-memory-utilization
+      - "0.35"
+      - --kv-cache-dtype
+      - fp8
+      - --enable-chunked-prefill
+      - --enable-prefix-caching
+      - --trust-remote-code
+      - --enable-multimodal
+      - --limit-mm-per-prompt
+      - '{"image":2,"video":0}'
+    environment:
+      DYN_DISCOVERY_BACKEND: etcd
+      DYN_EVENT_PLANE: nats
+      ETCD_ENDPOINTS: http://etcd:2379
+      NATS_SERVER: nats://nats:4222
+      DYN_SYSTEM_PORT: "8081"
+    gpus: all
+    shm_size: 16gb
+    volumes:
+      - /opt/ai/dynamo/source:/workspace/dynamo:ro
+      - /opt/ai/models/Qwen3.8-27B-NVFP4:/models/qwen38:ro
+    depends_on:
+      etcd:
+        condition: service_healthy
+      nats:
+        condition: service_started
+    networks:
+      - dynamo-backplane
+      - ai-network
+
+networks:
+  dynamo-backplane:
+    name: dynamo-backplane
+  ai-network:
+    external: true
