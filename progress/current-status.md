@@ -121,3 +121,16 @@ Last verified: 2026-11-02
 - Together with the previously verified Auto text request and Dynamo worker registration/routing logs for namespace `qwen38-vl`, this confirms the end-to-end Vision API path is operational.
 - The response's OCR field values have not been independently checked against the source image; semantic plausibility is not proof of exact transcription.
 - This was an API-level test. Image upload through the Open WebUI interface has not yet been separately verified in this test.
+
+
+## 2026-11-03 — Agent Registry route inventory captured
+
+The user supplied the host inspection output for `/opt/ai/langgraph-agent`. It confirms:
+
+- Public routes: `GET /v1/models`, `POST /v1/chat/completions`, and `GET /health`.
+- Admin router in `app/api/admin_routes.py`: `GET /admin/models`; `POST /admin/models/sync`; `POST /admin/models/{model_id}/approve`; `POST /admin/models/{model_id}/reject`; `PATCH /admin/models/{model_id}`; `POST /admin/models/{model_id}/enable`; `POST /admin/models/{model_id}/disable`; `GET /admin/models/{model_id}/status`.
+- Related contract/schema files: `app/api/admin_auth.py`, `app/api/schemas.py`, and `app/registry/schema.sql`.
+- No queue/request-status API was present in the inspected route inventory. Control Center must not show fabricated queue metrics or offer queue controls until a supported Agent/Model Manager API is implemented.
+- The exact bodies of the admin route/schema files have not yet been archived as source snapshots. Their route inventory is recorded here; source snapshots must only be added after exact contents are obtained.
+
+This output is now part of the canonical project record. Do not ask the user to repeat this route discovery.
