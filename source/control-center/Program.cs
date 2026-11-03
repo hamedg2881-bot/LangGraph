@@ -15,7 +15,6 @@ builder.Services.AddHostedService<HistoryBackgroundService>();
 
 var app = builder.Build();
 var manifestPath = "/opt/ai/control-center/config/profiles.json";
-var profileSwitchLock = new SemaphoreSlim(1, 1);
 
 app.UseDefaultFiles();
 app.UseStaticFiles();
@@ -130,6 +129,35 @@ app.MapGet("/api/status", async (IHttpClientFactory httpFactory) =>
 });
 
 
+app.MapGet("/api/ai-status", async (IHttpClientFactory httpFactory) =>
+{
+    var client = httpFactory.CreateClient("health");
+    var agentBase = (Environment.GetEnvironmentVariable("LANGGRAPH_AGENT_URL") ?? "http://127.0.0.1:8100").TrimEnd('/');
+    var dynamoBase = (Environment.GetEnvironmentVariable("DYNAMO_URL") ?? "http://127.0.0.1:8013").TrimEnd('/');
+    var agentHealth = await CheckEndpoint(client, $"{agentBase}/health");
+    var dynamoHealth = await CheckEndpoint(client, $"{dynamoBase}/health");
+    var modelsStatus = "unreachable";
+    var models = new List<string>();
+    try
+    {
+        using var response = await client.GetAsync($"{agentBase}/v1/models");
+        modelsStatus = response.IsSuccessStatusCode ? "ok" : $"http-{(int)response.StatusCode}";
+        if (response.IsSuccessStatusCode)
+        {
+            var payload = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+            if (payload?["data"] is JsonArray items)
+                models = items.Select(item => item?["id"]?.GetValue<string>()).Where(id => !string.IsNullOrWhiteSpace(id)).Select(id => id!).ToList();
+        }
+    }
+    catch (TaskCanceledException) { modelsStatus = "timeout"; }
+    catch { modelsStatus = "unreachable"; }
+    return Results.Ok(new
+    {
+        timestamp = DateTimeOffset.UtcNow,
+        agent = new { health = agentHealth.status, modelsStatus, models },
+        dynamo = new { health = dynamoHealth.status, httpCode = dynamoHealth.httpCode }
+    });
+});
 app.MapGet("/api/history", (int? hours) =>
 {
     var requestedHours = Math.Clamp(hours ?? 24, 1, 720);
@@ -152,277 +180,11 @@ app.MapGet("/api/events", (int? limit) =>
 });
 
 
-app.MapPost("/api/profile-switch", async Task<IResult>
-    (ProfileSwitchRequest request, IHttpClientFactory httpFactory) =>
-{
-    if (request is null ||
-        string.IsNullOrWhiteSpace(request.TargetProfile))
-        return Results.BadRequest(new { error = "TargetProfile is required." });
-
-    if (!request.Confirm)
-        return Results.BadRequest(new {
-            error = "Explicit confirmation is required.",
-            code = "confirmation-required"
-        });
-
-    if (!request.AcknowledgeRequestInterruptionRisk)
-        return Results.BadRequest(new {
-            error = "You must acknowledge that active requests may be interrupted.",
-            code = "interruption-risk-not-acknowledged"
-        });
-
-    if (!await profileSwitchLock.WaitAsync(0))
-        return Results.Conflict(new {
-            error = "Another profile switch is already in progress."
-        });
-
-    try
-    {
-        var root = JsonNode.Parse(await File.ReadAllTextAsync(manifestPath))
-            as JsonObject;
-
-        var profiles = root?["profiles"] as JsonObject;
-        var definitions = root?["services"] as JsonObject;
-        var switching = root?["switching"] as JsonObject;
-
-        if (profiles is null || definitions is null)
-            return Results.Problem("Profile configuration is incomplete.");
-
-        var targetName = request.TargetProfile.Trim();
-        var target = profiles[targetName] as JsonObject;
-
-        if (target is null)
-            return Results.BadRequest(new {
-                error = "Unknown target profile.",
-                targetProfile = targetName
-            });
-
-        var targets = target["services"] as JsonObject;
-        if (targets is null || targets.Count == 0)
-            return Results.Problem("Target profile has no service definitions.");
-
-        var plan = new List<(string name, string type, string resource,
-            string desired, string healthUrl, int startTimeout, int stopTimeout)>();
-
-        foreach (var item in targets)
-        {
-            if (item.Value is null)
-                return Results.BadRequest(new {
-                    error = "A service target is null.",
-                    service = item.Key
-                });
-
-            var desired = item.Value.ToString().ToLowerInvariant();
-            if (desired is not ("running" or "stopped"))
-                return Results.BadRequest(new {
-                    error = "Service target must be running or stopped.",
-                    service = item.Key
-                });
-
-            var def = definitions[item.Key] as JsonObject;
-            if (def is null)
-                return Results.BadRequest(new {
-                    error = "Service definition is missing.",
-                    service = item.Key
-                });
-
-            var type = def["type"]?.ToString() ?? "";
-            var resource = def["resource"]?.ToString() ?? "";
-
-            if (type is not ("docker" or "systemd") ||
-                string.IsNullOrWhiteSpace(resource))
-                return Results.BadRequest(new {
-                    error = "Invalid service runtime definition.",
-                    service = item.Key
-                });
-
-            int ReadPositiveInt(string key, int fallback)
-            {
-                return int.TryParse(def[key]?.ToString(), out var n) && n > 0
-                    ? n : fallback;
-            }
-
-            plan.Add((
-                item.Key,
-                type,
-                resource,
-                desired,
-                def["healthUrl"]?.ToString() ?? "",
-                ReadPositiveInt("startupTimeoutSeconds", 180),
-                ReadPositiveInt("stopTimeoutSeconds", 30)
-            ));
-        }
-
-        var previous = new Dictionary<string, string>(
-            StringComparer.OrdinalIgnoreCase);
-
-        foreach (var svc in plan)
-        {
-            var runtime = await ReadRuntimeStatus(svc.type, svc.resource);
-            if (runtime is not ("running" or "active" or "exited" or
-                "inactive" or "failed" or "dead"))
-                return Results.Conflict(new {
-                    error = "Could not reliably determine current service state; nothing was changed.",
-                    service = svc.name,
-                    runtime
-                });
-
-            previous[svc.name] = runtime;
-        }
-
-        var changed = new List<string>();
-
-        async Task<(int exitCode, string stdout, string stderr)> SetService(
-            string name, bool start)
-        {
-            var svc = plan.Single(x => x.name == name);
-            string executable;
-            string[] args;
-            int timeout;
-
-            if (svc.type == "docker")
-            {
-                executable = "docker";
-                args = start
-                    ? new[] { "start", svc.resource }
-                    : new[] { "stop", "--time",
-                        svc.stopTimeout.ToString(CultureInfo.InvariantCulture),
-                        svc.resource };
-                timeout = start ? 30 : svc.stopTimeout + 20;
-            }
-            else
-            {
-                executable = "systemctl";
-                args = new[] { start ? "start" : "stop", svc.resource };
-                timeout = start ? 60 : svc.stopTimeout + 20;
-            }
-
-            return await RunCommand(executable, args, timeout);
-        }
-
-        async Task<bool> WaitUntilHealthy(
-            (string name, string type, string resource, string desired,
-             string healthUrl, int startTimeout, int stopTimeout) svc)
-        {
-            var deadline = DateTimeOffset.UtcNow.AddSeconds(svc.startTimeout);
-            var client = httpFactory.CreateClient("health");
-
-            while (DateTimeOffset.UtcNow < deadline)
-            {
-                var runtime = await ReadRuntimeStatus(svc.type, svc.resource);
-
-                if (runtime is "running" or "active")
-                {
-                    if (string.IsNullOrWhiteSpace(svc.healthUrl))
-                        return true;
-
-                    var check = await CheckEndpoint(client, svc.healthUrl);
-                    if (check.status == "ok")
-                        return true;
-                }
-
-                await Task.Delay(TimeSpan.FromSeconds(3));
-            }
-
-            return false;
-        }
-
-        var stopped = new List<string>();
-        var started = new List<string>();
-
-        try
-        {
-            foreach (var svc in plan.Where(x =>
-                x.desired == "stopped" &&
-                previous[x.name] is "running" or "active"))
-            {
-                var result = await SetService(svc.name, false);
-                if (result.exitCode != 0)
-                    throw new InvalidOperationException(
-                        $"Stopping {svc.name} failed: {result.stderr}");
-
-                changed.Add(svc.name);
-                stopped.Add(svc.name);
-            }
-
-            foreach (var svc in plan.Where(x =>
-                x.desired == "running" &&
-                previous[x.name] is not ("running" or "active")))
-            {
-                var result = await SetService(svc.name, true);
-                if (result.exitCode != 0)
-                    throw new InvalidOperationException(
-                        $"Starting {svc.name} failed: {result.stderr}");
-
-                changed.Add(svc.name);
-                started.Add(svc.name);
-            }
-
-            foreach (var svc in plan.Where(x => x.desired == "running"))
-            {
-                if (!await WaitUntilHealthy(svc))
-                    throw new InvalidOperationException(
-                        $"Service {svc.name} did not become healthy within " +
-                        $"{svc.startTimeout} seconds.");
-            }
-
-            return Results.Ok(new {
-                success = true,
-                targetProfile = targetName,
-                stoppedServices = stopped,
-                startedServices = started,
-                message = "Target services are running and passed their health checks."
-            });
-        }
-        catch (Exception ex)
-        {
-            var rollbackErrors = new List<string>();
-
-            foreach (var name in changed.AsEnumerable().Reverse())
-            {
-                try
-                {
-                    var svc = plan.Single(x => x.name == name);
-                    var wasRunning = previous[name] is "running" or "active";
-                    var now = await ReadRuntimeStatus(svc.type, svc.resource);
-                    var isRunning = now is "running" or "active";
-
-                    if (wasRunning != isRunning)
-                    {
-                        var result = await SetService(name, wasRunning);
-                        if (result.exitCode != 0)
-                            rollbackErrors.Add(
-                                $"{name}: {result.stderr}");
-                    }
-                }
-                catch (Exception rollbackEx)
-                {
-                    rollbackErrors.Add($"{name}: {rollbackEx.Message}");
-                }
-            }
-
-            return Results.Problem(
-                title: "Profile switch failed",
-                detail: ex.Message + (rollbackErrors.Count == 0
-                    ? " Rollback was attempted."
-                    : " Rollback errors: " + string.Join("; ", rollbackErrors)),
-                statusCode: StatusCodes.Status500InternalServerError,
-                extensions: new Dictionary<string, object?> {
-                    ["targetProfile"] = targetName,
-                    ["changedServices"] = changed,
-                    ["rollbackErrors"] = rollbackErrors
-                });
-        }
-    }
-    catch (JsonException)
-    {
-        return Results.Problem("Profile configuration contains invalid JSON.");
-    }
-    finally
-    {
-        profileSwitchLock.Release();
-    }
-});
+app.MapPost("/api/profile-switch", () =>
+    Results.Problem(
+        title: "Profile switching is disabled",
+        detail: "Model lifecycle remains read-only until the safe Model Manager supports request leases, draining, and queue coordination.",
+        statusCode: StatusCodes.Status410Gone));
 
 app.Run();
 
