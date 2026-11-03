@@ -25,7 +25,7 @@
 ## Later
 - [ ] Define and assign verified capabilities to each model.
 - [ ] Admin approval and enablement workflow, only after user decision.
-- [ ] Test text, vision, coding, and tool-use routes with eligible workers.
+- [ ] Test coding and tool-use routes with eligible workers. Text and Vision through Auto have passed API-level tests (2026-11-03).
 - [ ] Improve runtime health checks beyond Dynamo model-list presence.
 - [ ] Add operational/admin documentation and automated tests.
 
@@ -73,3 +73,12 @@
 - [x] Remove profile apply UI and disable the old Docker/systemd profile-switch route.
 - [x] Escape dynamic service-card values.
 - [ ] Compare canonical source against host working tree, build, and test after explicit deployment approval.
+
+
+### Auto text and Vision API verification — 2026-11-03
+
+- [x] Verify a real Persian text chat through `model=Auto`.
+- [x] Verify a real JPEG image request through `model=Auto` using OpenAI-compatible multimodal message content and a Base64 data URL.
+- [x] Confirm the Vision API returned a structured Persian description and token usage.
+- [ ] Separately verify image upload and response through the Open WebUI browser interface.
+- [ ] Validate OCR field accuracy against the original image before treating extracted business/document values as authoritative.
