@@ -1,0 +1,675 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DGX Spark Control Center</title>
+<style>
+:root{color-scheme:dark;--bg:#0b1020;--panel:#141c30;--border:#293650;--text:#e8eefb;--muted:#9eacc4;--good:#51d6a1;--warn:#ffc66d;--bad:#ff8585;--accent:#8ba8ff}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,sans-serif}
+main{max-width:1400px;margin:auto;padding:24px}header{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+h1{font-size:25px;margin:0}h2{font-size:18px;margin:0 0 16px}.muted{color:var(--muted)}.small{font-size:12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:20px 0}
+.panel,.metric,.service{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:18px}
+.value{font-size:27px;font-weight:700;margin:8px 0}.unit{font-size:13px;color:var(--muted)}
+button{background:#24375e;border:1px solid #49649a;border-radius:9px;color:white;padding:10px 14px;cursor:pointer}
+button:disabled{opacity:.5;cursor:default}.status{display:inline-block;border-radius:20px;padding:4px 9px;background:#293650;font-size:12px}
+.ok{color:var(--good)}.warn{color:var(--warn)}.bad{color:var(--bad)}
+.services{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.service h3{margin:0 0 10px;font-size:16px}.service p{margin:8px 0}.error{color:var(--bad);overflow-wrap:anywhere}
+.bar{height:6px;background:#293650;border-radius:8px;overflow:hidden}.bar span{display:block;height:100%;background:var(--accent)}
+footer{margin-top:20px;color:var(--muted);font-size:12px}#message{margin:12px 0}
+
+.history-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}.history-controls h2{margin:0}.history-controls select{padding:8px 10px;border:1px solid #475569;border-radius:8px;background:#0f172a;color:inherit;font:inherit;max-width:100%}.history-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin:14px 0 24px}
+.chart-card{min-width:0;padding:14px;border:1px solid #334155;border-radius:12px;background:rgba(15,23,42,.45)}
+.chart-card h3{margin:0 0 8px;font-size:1rem}
+.chart-card canvas{display:block;width:100%;height:190px}
+.history-note,.history-empty{color:#94a3b8;font-size:.85rem}
+.profile-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:12px 0}
+.profile-chip{display:inline-block;padding:6px 12px;border:1px solid #64748b;border-radius:999px;font-weight:600}
+.profile-preview{margin:16px 0 22px;padding:16px;border:1px solid #334155;border-radius:12px;background:#0f172a}
+.profile-preview-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.profile-preview select,.profile-preview button{padding:9px 12px;border:1px solid #475569;border-radius:8px;background:#111c30;color:inherit;font:inherit}
+.profile-preview button{cursor:pointer}
+.profile-preview table{width:100%;border-collapse:collapse;margin-top:12px}
+.profile-preview th,.profile-preview td{padding:9px;text-align:right;border-bottom:1px solid #334155}
+.profile-preview-status{color:#94a3b8;font-size:.9rem}
+.profile-preview-result{overflow-x:auto}
+
+.event-list{display:grid;gap:8px;margin-top:12px}
+.event-item{padding:10px 12px;border:1px solid #334155;border-radius:10px;overflow-wrap:anywhere}
+.event-item time{display:block;color:#94a3b8;font-size:.82rem;margin-bottom:4px}
+@media(max-width:600px){.history-grid{grid-template-columns:1fr}.chart-card canvas{height:170px}}
+
+
+.event-filters{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:12px 0}
+.event-filters select{padding:8px 10px;border:1px solid #475569;border-radius:8px;background:#0f172a;color:inherit;font:inherit;max-width:100%}
+.event-table-wrap{width:100%;overflow-x:auto}
+.event-table{width:100%;border-collapse:collapse;font-size:.9rem}
+.event-table th,.event-table td{padding:10px;text-align:right;border-bottom:1px solid #334155;vertical-align:top}
+.event-table th{color:#cbd5e1;white-space:nowrap}
+.event-table td{overflow-wrap:anywhere}
+
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div>
+    <h1>DGX Spark Control Center</h1>
+    <div class="muted small">نمایش زنده وضعیت سرویس‌ها و منابع · نسخه اولیه فقط‌خواندنی</div>
+  </div>
+  <div>
+    <span id="overall" class="status">در حال بررسی</span>
+    <button id="refresh">به‌روزرسانی</button>
+  </div>
+</header>
+<div id="message" class="muted small">در حال دریافت اطلاعات از میزبان…</div>
+
+<section>
+<h2>منابع میزبان</h2>
+<div class="grid" id="metrics">
+  <div class="metric">در حال خواندن منابع…</div>
+</div>
+</section>
+
+<section class="panel">
+<h2>وضعیت سرویس‌ها</h2>
+<div id="services" class="services">در حال بررسی…</div>
+</section>
+
+
+<section class="panel" id="history-panel">
+  <h2>پروفایل فعال</h2>
+  <div class="profile-row">
+    <span id="active-profile" class="profile-chip">در حال تشخیص…</span>
+    <span id="profile-detail" class="history-note">بر اساس وضعیت واقعی سرویس‌ها</span>
+  </div>
+
+
+  <section class="profile-preview" id="profile-preview-panel">
+    <h3>پیش‌نمایش تعویض پروفایل</h3>
+    <p class="profile-preview-status">
+      ابتدا اختلاف وضعیت سرویس‌ها را بررسی کنید. اعمال پروفایل فقط با تأیید صریح انجام می‌شود و ممکن است درخواست‌های فعال قطع شوند.
+    </p>
+    <div class="profile-preview-controls">
+      <label for="profile-target">پروفایل مقصد:</label>
+      <select id="profile-target">
+        <option value="">در حال بارگذاری پروفایل‌ها…</option>
+      </select>
+      <button id="profile-preview-button" type="button">محاسبه پیش‌نمایش</button>
+    </div>
+    <div class="profile-preview-controls">
+      <label>
+        <input id="profile-switch-risk" type="checkbox">
+        ریسک قطع درخواست‌های فعال را می‌پذیرم.
+      </label>
+      <button id="profile-apply-button" type="button">اعمال پروفایل انتخاب‌شده</button>
+    </div>
+    <div id="profile-preview-result" aria-live="polite">
+      برای محاسبه، پروفایل مقصد را انتخاب کنید.
+    </div>
+  </section>
+
+  <div class="history-controls">
+    <h2 id="history-title">تاریخچه منابع</h2>
+    <label for="history-range">بازه زمانی:</label>
+    <select id="history-range">
+      <option value="1">۱ ساعت</option>
+      <option value="6">۶ ساعت</option>
+      <option value="24" selected>۲۴ ساعت</option>
+      <option value="168">۷ روز</option>
+    </select>
+  </div>
+  <p class="history-note">نمونه‌برداری هر ۶۰ ثانیه؛ نگهداری تاریخچه حداکثر ۳۰ روز.</p>
+  <div class="history-grid">
+    <div class="chart-card">
+      <h3>مصرف RAM (GiB)</h3>
+      <canvas id="ramChart" aria-label="نمودار تاریخی مصرف RAM"></canvas>
+      <div id="ramChartNote" class="history-note">در انتظار داده…</div>
+    </div>
+    <div class="chart-card">
+      <h3>استفاده از GPU (%)</h3>
+      <canvas id="gpuChart" aria-label="نمودار تاریخی استفاده از GPU"></canvas>
+      <div id="gpuChartNote" class="history-note">در انتظار داده…</div>
+    </div>
+    <div class="chart-card">
+      <h3>دمای GPU (°C)</h3>
+      <canvas id="tempChart" aria-label="نمودار تاریخی دمای GPU"></canvas>
+      <div id="tempChartNote" class="history-note">در انتظار داده…</div>
+    </div>
+  </div>
+
+  <h2>رویدادهای اخیر</h2>
+  <div class="event-filters">
+    <label for="event-type-filter">نوع رویداد</label>
+    <select id="event-type-filter">
+      <option value="">همه رویدادها</option>
+      <option value="service-readiness-changed">تغییر وضعیت سرویس</option>
+      <option value="history-sampling-error">خطای ثبت تاریخچه</option>
+    </select>
+    <label for="event-service-filter">سرویس</label>
+    <select id="event-service-filter">
+      <option value="">همه سرویس‌ها</option>
+    </select>
+    <span id="event-count" class="history-note"></span>
+  </div>
+  <div id="history-events" class="event-list">
+    <div class="history-empty">در حال دریافت رویدادها…</div>
+  </div>
+</section>
+
+<footer>
+داده‌ها از سیستم‌عامل، Docker، systemd و endpointهای واقعی خوانده می‌شوند.
+«Runtime فعال» به‌تنهایی به معنی آماده‌بودن مدل برای inference نیست.
+</footer>
+</main>
+<script>
+const $ = id => document.getElementById(id);
+function fmt(value, suffix='') {
+  return value === null || value === undefined ? 'نامشخص' : `${value}${suffix}`;
+}
+function metric(title, value, note='') {
+  return `<div class="metric"><div class="muted">${title}</div><div class="value">${value}</div><div class="unit">${note}</div></div>`;
+}
+function stateClass(value) {
+  if (['ok','active','running','endpoint-healthy'].includes(value)) return 'ok';
+  if (['degraded','unknown','runtime-only','timeout'].includes(value)) return 'warn';
+  return 'bad';
+}
+function renderResources(r) {
+  const m = r.memory || {};
+  const d = r.disk || {};
+  const g = r.gpu || {};
+  const l = r.loadAverage || {};
+  $('metrics').innerHTML =
+    metric('RAM مصرف‌شده', fmt(m.usedGiB, ' GiB'), `در دسترس: ${fmt(m.availableGiB, ' GiB')} / کل: ${fmt(m.totalGiB, ' GiB')}`) +
+    metric('Swap مصرف‌شده', fmt(m.swapTotalGiB != null && m.swapFreeGiB != null ? (m.swapTotalGiB-m.swapFreeGiB).toFixed(2) : null, ' GiB'), `کل: ${fmt(m.swapTotalGiB, ' GiB')}`) +
+    metric('GPU Utilization', fmt(g.utilizationPercent, '%'), `دمای GPU: ${fmt(g.temperatureC, ' °C')}`) +
+    metric('توان GPU', fmt(g.powerWatts, ' W'), g.note || 'منبع: nvidia-smi') +
+    metric('دیسک ریشه', fmt(d.usedPercent, '%'), `آزاد: ${fmt(d.freeGiB, ' GiB')} / کل: ${fmt(d.totalGiB, ' GiB')}`) +
+    metric('Load Average', fmt(l.oneMinute), `۵ دقیقه: ${fmt(l.fiveMinutes)} · ۱۵ دقیقه: ${fmt(l.fifteenMinutes)}`);
+}
+function renderServices(items) {
+  $('services').innerHTML = items.map(s => {
+    const endpoint = s.endpointHttpCode == null ? s.endpointStatus : `HTTP ${s.endpointHttpCode}`;
+    const error = s.endpointError ? `<p class="error small">${s.endpointError}</p>` : '';
+    return `<article class="service">
+      <h3>${s.name}</h3>
+      <p><span class="muted">نوع:</span> ${s.type} · <span class="muted">دسته:</span> ${s.category}</p>
+      <p><span class="muted">Runtime:</span> <span class="${stateClass(s.runtimeStatus)}">${s.runtimeStatus}</span></p>
+      <p><span class="muted">سلامت endpoint:</span> <span class="${stateClass(s.endpointStatus)}">${endpoint}</span></p>
+      <p><span class="muted">جمع‌بندی:</span> <span class="${stateClass(s.readiness)}">${s.readiness}</span></p>
+      <p class="muted small">${s.healthUrl || 'Health endpoint تعریف نشده'}</p>
+      ${error}
+    </article>`;
+  }).join('');
+}
+async function refresh() {
+  $('refresh').disabled = true;
+  $('message').textContent = 'در حال به‌روزرسانی…';
+  try {
+    const response = await fetch('/api/status', {cache:'no-store'});
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const data = await response.json();
+    renderResources(data.resources || {});
+    renderServices(data.services || []);
+    const bad = (data.services || []).filter(s => ['degraded','unknown'].includes(s.readiness));
+    $('overall').textContent = bad.length ? `${bad.length} مورد نیازمند بررسی` : 'پاسخ دریافت شد';
+    $('overall').className = `status ${bad.length ? 'warn' : 'ok'}`;
+    $('message').textContent = `میزبان: ${data.host} · آخرین بررسی: ${new Date(data.timestamp).toLocaleString('fa-IR')}`;
+  } catch (e) {
+    $('overall').textContent = 'خطا در دریافت وضعیت';
+    $('overall').className = 'status bad';
+    $('message').textContent = `خطا: ${e.message}`;
+  } finally {
+    $('refresh').disabled = false;
+  }
+}
+$('refresh').addEventListener('click', refresh);
+refresh();
+setInterval(refresh, 10000);
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  })[c]);
+}
+
+async function renderActiveProfile() {
+  const chip = $('active-profile');
+  const detail = $('profile-detail');
+  try {
+    const [profileResponse, statusResponse] = await Promise.all([
+      fetch('/api/profiles', {cache:'no-store'}),
+      fetch('/api/status', {cache:'no-store'})
+    ]);
+    if (!profileResponse.ok || !statusResponse.ok)
+      throw new Error('API در دسترس نیست');
+
+    const manifest = await profileResponse.json();
+    const status = await statusResponse.json();
+    const profiles = manifest.profiles || {};
+    const actual = Object.fromEntries(
+      (status.services || []).map(s => [
+        s.name,
+        ['running','active'].includes(String(s.runtimeStatus).toLowerCase())
+      ])
+    );
+
+    const matches = Object.entries(profiles).filter(([key, profile]) => {
+      const expected = profile.services || {};
+      return Object.keys(expected).length > 0 &&
+        Object.entries(expected).every(([name, wanted]) =>
+          Object.prototype.hasOwnProperty.call(actual, name) &&
+          actual[name] === (String(wanted).toLowerCase() === 'running')
+        );
+    });
+
+    if (matches.length === 1) {
+      chip.textContent = matches[0][1].displayName || matches[0][0];
+      detail.textContent = 'وضعیت سرویس‌های اصلی با این پروفایل مطابقت دارد.';
+      chip.style.borderColor = '#22c55e';
+    } else {
+      chip.textContent = 'ترکیبی / خارج از پروفایل';
+      const mainNames = Object.keys(profiles).length
+        ? [...new Set(Object.values(profiles).flatMap(p => Object.keys(p.services || {})))]
+        : [];
+      const running = mainNames.filter(n => actual[n]);
+      detail.textContent = `سرویس‌های اصلی فعال: ${running.length} از ${mainNames.length}`;
+      chip.style.borderColor = '#f59e0b';
+    }
+  } catch (e) {
+    chip.textContent = 'وضعیت نامشخص';
+    detail.textContent = e.message;
+    chip.style.borderColor = '#64748b';
+  }
+}
+
+
+async function renderProfilePreview() {
+  const result = $('profile-preview-result');
+  const targetSelect = $('profile-target');
+  const button = $('profile-preview-button');
+
+  result.innerHTML = '<p class="profile-preview-status">در حال خواندن وضعیت واقعی سرویس‌ها…</p>';
+  button.disabled = true;
+
+  try {
+    const [profileResponse, statusResponse] = await Promise.all([
+      fetch('/api/profiles', {cache:'no-store'}),
+      fetch('/api/status', {cache:'no-store'})
+    ]);
+
+    if (!profileResponse.ok || !statusResponse.ok)
+      throw new Error('دریافت پروفایل‌ها یا وضعیت سرویس‌ها ناموفق بود.');
+
+    const manifest = await profileResponse.json();
+    const status = await statusResponse.json();
+    const profiles = manifest.profiles || {};
+    const targetKey = targetSelect.value;
+    const target = profiles[targetKey];
+
+    if (!target)
+      throw new Error('پروفایل مقصد معتبر انتخاب نشده است.');
+
+    const services = status.services || [];
+    const actual = Object.fromEntries(services.map(service => {
+      const state = String(service.runtimeStatus || '').toLowerCase();
+      let running = null;
+
+      if (['running', 'active'].includes(state)) running = true;
+      else if (['stopped', 'exited', 'dead', 'not-found'].includes(state))
+        running = false;
+
+      return [service.name, running];
+    }));
+    const known = new Set(services.map(service => service.name));
+    const expected = target.services || {};
+    const names = Object.keys(expected);
+
+    const missing = names.filter(name => !known.has(name));
+    if (missing.length) {
+      throw new Error('وضعیت این سرویس‌ها در دسترس نیست: ' + missing.join(', '));
+    }
+
+    const unknown = names.filter(name => actual[name] === null);
+    if (unknown.length) {
+      throw new Error('وضعیت واقعی این سرویس‌ها مشخص نیست؛ پیش‌نمایش قابل اعتماد نیست: ' + unknown.join(', '));
+    }
+
+    const rows = names.map(name => {
+      const running = actual[name];
+      const wanted = String(expected[name]).toLowerCase() === 'running';
+      let action;
+      let actionLabel;
+
+      if (running === wanted) {
+        action = 'same';
+        actionLabel = 'بدون تغییر';
+      } else if (wanted) {
+        action = 'start';
+        actionLabel = 'نیازمند روشن‌شدن';
+      } else {
+        action = 'stop';
+        actionLabel = 'نیازمند خاموش‌شدن';
+      }
+
+      return {name, running, wanted, action, actionLabel};
+    });
+
+    const currentLabel = rows.every(row => row.running === row.wanted)
+      ? 'وضعیت فعلی با پروفایل مقصد مطابقت دارد.'
+      : 'وضعیت فعلی با پروفایل مقصد متفاوت است.';
+
+    const count = action => rows.filter(row => row.action === action).length;
+
+    result.innerHTML = `
+      <p><strong>مقصد:</strong> ${escapeHtml(target.displayName || targetKey)}</p>
+      <p class="profile-preview-status">${escapeHtml(currentLabel)}</p>
+      <p>
+        نیازمند روشن‌شدن: ${count('start')} |
+        نیازمند خاموش‌شدن: ${count('stop')} |
+        بدون تغییر: ${count('same')}
+      </p>
+      <div class="profile-preview-result">
+        <table>
+          <thead><tr>
+            <th>سرویس</th><th>وضعیت واقعی</th><th>وضعیت مقصد</th><th>اختلاف</th>
+          </tr></thead>
+          <tbody>${rows.map(row => `
+            <tr>
+              <td>${escapeHtml(row.name)}</td>
+              <td>${row.running ? 'فعال' : 'غیرفعال'}</td>
+              <td>${row.wanted ? 'فعال' : 'غیرفعال'}</td>
+              <td>${escapeHtml(row.actionLabel)}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+      <p class="profile-preview-status">
+        این فهرست محاسباتی است و هیچ فرمان مدیریتی اجرا نشده است.
+      </p>`;
+  } catch (e) {
+    result.innerHTML =
+      `<p role="alert">${escapeHtml(e.message || 'خطای نامشخص')}</p>`;
+  } finally {
+    button.disabled = false;
+  }
+}
+
+
+async function applySelectedProfile() {
+  const select = $('profile-target');
+  const risk = $('profile-switch-risk');
+  const applyButton = $('profile-apply-button');
+  const previewButton = $('profile-preview-button');
+  const result = $('profile-preview-result');
+
+  if (!risk.checked) {
+    result.innerHTML = '<p role="alert">برای ادامه، پذیرش ریسک قطع درخواست‌های فعال را تأیید کنید.</p>';
+    return;
+  }
+
+  const targetName = select.options[select.selectedIndex]?.text || select.value;
+  if (!window.confirm(
+    `پروفایل «${targetName}» اعمال شود؟\\n\\n` +
+    'سرویس‌ها ممکن است متوقف یا راه‌اندازی شوند و درخواست‌های فعال قطع شوند.'
+  )) return;
+
+  applyButton.disabled = true;
+  previewButton.disabled = true;
+  select.disabled = true;
+  risk.disabled = true;
+  result.innerHTML = '<p role="status">درخواست اعمال ارسال شد؛ وضعیت سرویس‌ها بررسی می‌شود. لطفاً صفحه را نبندید.</p>';
+
+  try {
+    const response = await fetch('/api/profile-switch', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        targetProfile: select.value,
+        confirm: true,
+        acknowledgeRequestInterruptionRisk: true
+      })
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      throw new Error(payload.detail || payload.error ||
+        `اعمال پروفایل ناموفق بود (HTTP ${response.status}).`);
+    }
+
+    result.innerHTML =
+      `<p role="status"><strong>پروفایل اعمال شد.</strong> ${escapeHtml(payload.message || '')}</p>`;
+    await renderActiveProfile();
+    await renderProfilePreview();
+  } catch (e) {
+    result.innerHTML =
+      `<p role="alert">${escapeHtml(e.message || 'خطای نامشخص هنگام اعمال پروفایل')}</p>`;
+  } finally {
+    applyButton.disabled = false;
+    previewButton.disabled = false;
+    select.disabled = false;
+    risk.disabled = false;
+  }
+}
+
+async function initializeProfilePreview() {
+  const select = $('profile-target');
+  const button = $('profile-preview-button');
+
+  try {
+    const response = await fetch('/api/profiles', {cache:'no-store'});
+    if (!response.ok) throw new Error('دریافت پروفایل‌ها ناموفق بود.');
+
+    const manifest = await response.json();
+    const profiles = manifest.profiles || {};
+    const entries = Object.entries(profiles);
+
+    if (!entries.length) throw new Error('پروفایلی تعریف نشده است.');
+
+    select.innerHTML = entries.map(([key, profile]) =>
+      `<option value="${escapeHtml(key)}">${escapeHtml(profile.displayName || key)}</option>`
+    ).join('');
+
+    const defaultProfile = manifest.application?.defaultProfile;
+    if (defaultProfile && profiles[defaultProfile])
+      select.value = defaultProfile;
+
+    button.addEventListener('click', renderProfilePreview);
+    $('profile-apply-button').addEventListener('click', applySelectedProfile);
+    select.addEventListener('change', renderProfilePreview);
+    await renderProfilePreview();
+  } catch (e) {
+    $('profile-preview-result').innerHTML =
+      `<p role="alert">${escapeHtml(e.message || 'خطا در بارگذاری پروفایل‌ها')}</p>`;
+    button.disabled = true;
+  }
+}
+
+
+function drawHistoryChart(canvasId, noteId, samples, getter, label, suffix='') {
+  const canvas = $(canvasId);
+  const note = $(noteId);
+  const points = samples.map(sample => ({
+    t: sample.timestamp,
+    v: getter(sample.resources || {})
+  })).filter(p => Number.isFinite(p.v));
+
+  const rect = canvas.getBoundingClientRect();
+  const width = Math.max(240, Math.floor(rect.width || 300));
+  const height = Math.max(150, Math.floor(rect.height || 190));
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.clearRect(0, 0, width, height);
+
+  if (!points.length) {
+    note.textContent = 'هنوز داده‌ای برای نمایش ثبت نشده است.';
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px sans-serif';
+    ctx.fillText('داده‌ای موجود نیست', 12, 28);
+    return;
+  }
+
+  const pad = {l:58, r:12, t:14, b:28};
+  const plotW = width - pad.l - pad.r;
+  const plotH = height - pad.t - pad.b;
+  const max = Math.max(1, ...points.map(p => p.v)) * 1.12;
+
+  ctx.font = '12px sans-serif';
+  ctx.lineWidth = 1;
+  ctx.strokeStyle = '#475569';
+  ctx.fillStyle = '#cbd5e1';
+  ctx.textAlign = 'right';
+  for (let i=0; i<=4; i++) {
+    const y = pad.t + plotH * i / 4;
+    ctx.beginPath();
+    ctx.moveTo(pad.l, y);
+    ctx.lineTo(width-pad.r, y);
+    ctx.stroke();
+    ctx.fillText((max * (1-i/4)).toFixed(1), pad.l-8, y+4);
+  }
+  ctx.textAlign = 'left';
+
+  ctx.strokeStyle = '#38bdf8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  points.forEach((p, i) => {
+    const x = pad.l + (points.length === 1 ? plotW/2 : plotW*i/(points.length-1));
+    const y = pad.t + plotH * (1-p.v/max);
+    if (i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+
+  const first = new Date(points[0].t);
+  const last = new Date(points[points.length-1].t);
+  ctx.fillStyle = '#94a3b8';
+  ctx.fillText(first.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'}), pad.l, height-7);
+  const lastLabel = last.toLocaleTimeString('fa-IR',{hour:'2-digit',minute:'2-digit'});
+  ctx.fillText(lastLabel, Math.max(pad.l, width-pad.r-ctx.measureText(lastLabel).width), height-7);
+
+  const latest = points[points.length-1].v;
+  note.textContent = `${points.length} نمونه · آخرین مقدار: ${latest.toFixed(1)}${suffix}`;
+}
+
+
+let cachedHistoryEvents = [];
+
+function renderHistoryEvents() {
+  const typeFilter = $('event-type-filter').value;
+  const serviceFilter = $('event-service-filter').value;
+  const filtered = cachedHistoryEvents.filter(e =>
+    (!typeFilter || e.type === typeFilter) &&
+    (!serviceFilter || (e.service || '') === serviceFilter)
+  );
+
+  $('event-count').textContent = `نمایش ${filtered.length} از ${cachedHistoryEvents.length} رویداد`;
+
+  const container = $('history-events');
+  if (!filtered.length) {
+    container.innerHTML = '<div class="history-empty">رویدادی با این فیلترها پیدا نشد.</div>';
+    return;
+  }
+
+  const rows = filtered.slice().reverse().map(e => {
+    const when = e.timestamp
+      ? new Date(e.timestamp).toLocaleString('fa-IR')
+      : 'زمان نامشخص';
+
+    let type = e.type || 'رویداد';
+    let service = e.service || '—';
+    let details = '';
+
+    if (e.type === 'service-readiness-changed') {
+      type = 'تغییر وضعیت سرویس';
+      details = `${e.previousReadiness || 'نامشخص'} ← ${e.readiness || 'نامشخص'}`;
+      if (e.runtimeStatus) details += ` · Runtime: ${e.runtimeStatus}`;
+      if (e.endpointStatus) details += ` · Endpoint: ${e.endpointStatus}`;
+    } else if (e.type === 'history-sampling-error') {
+      type = 'خطای ثبت تاریخچه';
+      details = e.message || 'خطای نامشخص';
+    } else {
+      details = e.message || '';
+    }
+
+    return `<tr>
+      <td>${escapeHtml(when)}</td>
+      <td>${escapeHtml(service)}</td>
+      <td>${escapeHtml(type)}</td>
+      <td>${escapeHtml(details)}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `<div class="event-table-wrap">
+    <table class="event-table">
+      <thead><tr><th>زمان</th><th>سرویس</th><th>رویداد</th><th>جزئیات / وضعیت قبل و بعد</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+  </div>`;
+}
+
+async function refreshHistory(hours = Number($('history-range')?.value || 24)) {
+  try {
+    const [historyResponse, eventsResponse] = await Promise.all([
+      fetch(`/api/history?hours=${[1,6,24,168].includes(hours) ? hours : 24}`, {cache:'no-store'}),
+      fetch('/api/events?limit=1000', {cache:'no-store'})
+    ]);
+    if (!historyResponse.ok || !eventsResponse.ok)
+      throw new Error('دریافت تاریخچه ناموفق بود');
+
+    const history = await historyResponse.json();
+    const eventsData = await eventsResponse.json();
+    const samples = history.samples || [];
+    const rangeLabels = {1:'۱ ساعت گذشته',6:'۶ ساعت گذشته',24:'۲۴ ساعت گذشته',168:'۷ روز گذشته'};
+    $('history-title').textContent = `تاریخچه منابع · ${rangeLabels[hours] || rangeLabels[24]}`;
+    drawHistoryChart('ramChart','ramChartNote',samples,
+      r => r.memory?.usedGiB,'RAM',' GiB');
+    drawHistoryChart('gpuChart','gpuChartNote',samples,
+      r => r.gpu?.utilizationPercent,'GPU','%');
+    drawHistoryChart('tempChart','tempChartNote',samples,
+      r => r.gpu?.temperatureC,'Temperature',' °C');
+
+    cachedHistoryEvents = eventsData.events || [];
+
+    const serviceSelect = $('event-service-filter');
+    const previousService = serviceSelect.value;
+    const serviceNames = [...new Set(cachedHistoryEvents
+      .map(e => e.service)
+      .filter(Boolean))].sort();
+
+    serviceSelect.innerHTML =
+      '<option value="">همه سرویس‌ها</option>' +
+      serviceNames.map(name =>
+        `<option value="${escapeHtml(name)}">${escapeHtml(name)}</option>`
+      ).join('');
+
+    if (serviceNames.includes(previousService))
+      serviceSelect.value = previousService;
+
+    renderHistoryEvents();
+  } catch (e) {
+    $('history-events').innerHTML =
+      `<div class="history-empty">خطا در دریافت تاریخچه: ${escapeHtml(e.message)}</div>`;
+  }
+}
+
+window.addEventListener('resize', () => {
+  clearTimeout(window.historyResizeTimer);
+  window.historyResizeTimer = setTimeout(refreshHistory, 250);
+});
+
+renderActiveProfile();
+initializeProfilePreview();
+refreshHistory();
+$('history-range').addEventListener('change', () =>
+  refreshHistory(Number($('history-range').value)));
+$('event-type-filter').addEventListener('change', renderHistoryEvents);
+$('event-service-filter').addEventListener('change', renderHistoryEvents);
+setInterval(() => refreshHistory(), 60000);
+</script>
+</body>
+</html>
