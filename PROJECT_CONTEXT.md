@@ -115,3 +115,17 @@ All admin routes require a separate ADMIN_API_KEY Bearer token. The key is store
 - The Control Center must be evolved in place to consume LangGraph Registry and Dynamo runtime data. Preserve its existing UI, service, and operational behavior unless a reviewed change explicitly supersedes them.
 - User's intended model operation is sequential-capable: every approved model should be independently runnable through the central architecture, but simultaneous residency/execution of heavy models is NOT a requirement. The system should select the appropriate model per request and manage the selected worker's lifecycle/resources safely.
 - Keep the central architecture: Open WebUI → LangGraph Agent → Dynamo frontend/worker runtime. Open WebUI exposes Auto; LangGraph selects the model; Registry stores catalog/approval/capabilities; Dynamo handles inference/runtime.
+
+
+## 2026-11-03 — Authoritative corrections and Control Center redesign
+
+This section supersedes conflicting earlier notes above where they describe the old public model-list behavior or require preservation of legacy Control Center profiles.
+
+- Public Agent `GET /v1/models` intentionally exposes only the logical model `Auto`. Do not expose Dynamo worker IDs as public selectable models.
+- The existing Control Center is to be fully modernized in place for the LangGraph + Dynamo architecture. Legacy `coding`/`image` profiles and their stale model health URLs are obsolete and must not drive model lifecycle or health reporting.
+- Control Center is an administrative/observability surface; LangGraph Registry remains authoritative for catalog metadata, capabilities, approval, and enablement. Dynamo remains authoritative for live worker/runtime discovery. PostgreSQL checkpointer data must remain untouched.
+- The host inspection output supplied on 2026-11-03 confirms Agent admin routes in `app/api/admin_routes.py`: GET list; POST sync; POST approve; POST reject; PATCH model; POST enable; POST disable; GET per-model status. Public chat routes remain `/v1/models` and `/v1/chat/completions`; health is `/health`.
+- All admin routes are protected by the existing Bearer admin authentication dependency. Never expose or copy the secret value from `config/agent.env`.
+- Registry discovery is not a load/install/activate operation. Newly discovered models require admin approval; synchronization must preserve existing admin decisions and curated capabilities.
+- The host inspection also identified `app/api/schemas.py` and `app/registry/schema.sql` as the Registry contract/schema files. No queue/request-management endpoint appeared in the inspected route inventory; do not claim queue visibility or controls until an actual API exists.
+- Continue from canonical GitHub project notes and source snapshots before asking the user to repeat information. Ask for host output only when a new, focused live verification is genuinely required and is not already recorded.
