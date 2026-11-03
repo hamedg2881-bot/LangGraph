@@ -74,6 +74,11 @@ footer{margin-top:20px;color:var(--muted);font-size:12px}#message{margin:12px 0}
 </section>
 
 <section class="panel">
+<h2>وضعیت مسیر هوش مصنوعی</h2>
+<div id="ai-status" class="services">در حال بررسی Agent و Dynamo…</div>
+</section>
+
+<section class="panel">
 <h2>وضعیت سرویس‌ها</h2>
 <div id="services" class="services">در حال بررسی…</div>
 </section>
@@ -88,9 +93,9 @@ footer{margin-top:20px;color:var(--muted);font-size:12px}#message{margin:12px 0}
 
 
   <section class="profile-preview" id="profile-preview-panel">
-    <h3>پیش‌نمایش تعویض پروفایل</h3>
+    <h3>نمایش تطبیق پروفایل (فقط‌خواندنی)</h3>
     <p class="profile-preview-status">
-      ابتدا اختلاف وضعیت سرویس‌ها را بررسی کنید. اعمال پروفایل فقط با تأیید صریح انجام می‌شود و ممکن است درخواست‌های فعال قطع شوند.
+      این بخش فقط برای مشاهده وضعیت تنظیمات قدیمی است. کنترل روشن/خاموش‌کردن سرویس‌ها از این داشبورد غیرفعال است تا درخواست‌های فعال قطع نشوند.
     </p>
     <div class="profile-preview-controls">
       <label for="profile-target">پروفایل مقصد:</label>
@@ -98,13 +103,6 @@ footer{margin-top:20px;color:var(--muted);font-size:12px}#message{margin:12px 0}
         <option value="">در حال بارگذاری پروفایل‌ها…</option>
       </select>
       <button id="profile-preview-button" type="button">محاسبه پیش‌نمایش</button>
-    </div>
-    <div class="profile-preview-controls">
-      <label>
-        <input id="profile-switch-risk" type="checkbox">
-        ریسک قطع درخواست‌های فعال را می‌پذیرم.
-      </label>
-      <button id="profile-apply-button" type="button">اعمال پروفایل انتخاب‌شده</button>
     </div>
     <div id="profile-preview-result" aria-live="polite">
       برای محاسبه، پروفایل مقصد را انتخاب کنید.
@@ -193,27 +191,45 @@ function renderResources(r) {
 function renderServices(items) {
   $('services').innerHTML = items.map(s => {
     const endpoint = s.endpointHttpCode == null ? s.endpointStatus : `HTTP ${s.endpointHttpCode}`;
-    const error = s.endpointError ? `<p class="error small">${s.endpointError}</p>` : '';
+    const error = s.endpointError ? `<p class="error small">${escapeHtml(s.endpointError)}</p>` : '';
     return `<article class="service">
-      <h3>${s.name}</h3>
-      <p><span class="muted">نوع:</span> ${s.type} · <span class="muted">دسته:</span> ${s.category}</p>
-      <p><span class="muted">Runtime:</span> <span class="${stateClass(s.runtimeStatus)}">${s.runtimeStatus}</span></p>
-      <p><span class="muted">سلامت endpoint:</span> <span class="${stateClass(s.endpointStatus)}">${endpoint}</span></p>
-      <p><span class="muted">جمع‌بندی:</span> <span class="${stateClass(s.readiness)}">${s.readiness}</span></p>
-      <p class="muted small">${s.healthUrl || 'Health endpoint تعریف نشده'}</p>
+      <h3>${escapeHtml(s.name)}</h3>
+      <p><span class="muted">نوع:</span> ${escapeHtml(s.type)} · <span class="muted">دسته:</span> ${escapeHtml(s.category)}</p>
+      <p><span class="muted">Runtime:</span> <span class="${stateClass(s.runtimeStatus)}">${escapeHtml(s.runtimeStatus)}</span></p>
+      <p><span class="muted">سلامت endpoint:</span> <span class="${stateClass(s.endpointStatus)}">${escapeHtml(endpoint)}</span></p>
+      <p><span class="muted">جمع‌بندی:</span> <span class="${stateClass(s.readiness)}">${escapeHtml(s.readiness)}</span></p>
+      <p class="muted small">${escapeHtml(s.healthUrl || 'Health endpoint تعریف نشده')}</p>
       ${error}
     </article>`;
   }).join('');
 }
+function renderAiStatus(data) {
+  const agent = data.agent || {};
+  const dynamo = data.dynamo || {};
+  const models = Array.isArray(agent.models) ? agent.models : [];
+  const agentHealth = agent.health || "unknown";
+  const modelsStatus = agent.modelsStatus || "unknown";
+  const dynamoHealth = dynamo.health || "unknown";
+  $("ai-status").innerHTML =
+    '<article class="service"><h3>LangGraph Agent</h3><p>Health: <span class="' + stateClass(agentHealth) + '">' + escapeHtml(agentHealth) + '</span></p><p>مدل‌های ارائه‌شده: ' + escapeHtml(models.join("، ") || "دریافت نشد") + '</p><p>API مدل‌ها: <span class="' + stateClass(modelsStatus) + '">' + escapeHtml(modelsStatus) + '</span></p></article>' +
+    '<article class="service"><h3>NVIDIA Dynamo</h3><p>Health: <span class="' + stateClass(dynamoHealth) + '">' + escapeHtml(dynamoHealth) + '</span></p><p>HTTP: ' + escapeHtml(dynamo.httpCode ?? "—") + '</p></article>';
+}
+
 async function refresh() {
   $('refresh').disabled = true;
   $('message').textContent = 'در حال به‌روزرسانی…';
   try {
-    const response = await fetch('/api/status', {cache:'no-store'});
+    const [response, aiResponse] = await Promise.all([
+      fetch('/api/status', {cache:'no-store'}),
+      fetch('/api/ai-status', {cache:'no-store'})
+    ]);
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    if (!aiResponse.ok) throw new Error(`AI status HTTP ${aiResponse.status}`);
     const data = await response.json();
+    const aiData = await aiResponse.json();
     renderResources(data.resources || {});
     renderServices(data.services || []);
+    renderAiStatus(aiData);
     const bad = (data.services || []).filter(s => ['degraded','unknown'].includes(s.readiness));
     $('overall').textContent = bad.length ? `${bad.length} مورد نیازمند بررسی` : 'پاسخ دریافت شد';
     $('overall').className = `status ${bad.length ? 'warn' : 'ok'}`;
@@ -399,62 +415,6 @@ async function renderProfilePreview() {
 }
 
 
-async function applySelectedProfile() {
-  const select = $('profile-target');
-  const risk = $('profile-switch-risk');
-  const applyButton = $('profile-apply-button');
-  const previewButton = $('profile-preview-button');
-  const result = $('profile-preview-result');
-
-  if (!risk.checked) {
-    result.innerHTML = '<p role="alert">برای ادامه، پذیرش ریسک قطع درخواست‌های فعال را تأیید کنید.</p>';
-    return;
-  }
-
-  const targetName = select.options[select.selectedIndex]?.text || select.value;
-  if (!window.confirm(
-    `پروفایل «${targetName}» اعمال شود؟\\n\\n` +
-    'سرویس‌ها ممکن است متوقف یا راه‌اندازی شوند و درخواست‌های فعال قطع شوند.'
-  )) return;
-
-  applyButton.disabled = true;
-  previewButton.disabled = true;
-  select.disabled = true;
-  risk.disabled = true;
-  result.innerHTML = '<p role="status">درخواست اعمال ارسال شد؛ وضعیت سرویس‌ها بررسی می‌شود. لطفاً صفحه را نبندید.</p>';
-
-  try {
-    const response = await fetch('/api/profile-switch', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        targetProfile: select.value,
-        confirm: true,
-        acknowledgeRequestInterruptionRisk: true
-      })
-    });
-
-    const payload = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      throw new Error(payload.detail || payload.error ||
-        `اعمال پروفایل ناموفق بود (HTTP ${response.status}).`);
-    }
-
-    result.innerHTML =
-      `<p role="status"><strong>پروفایل اعمال شد.</strong> ${escapeHtml(payload.message || '')}</p>`;
-    await renderActiveProfile();
-    await renderProfilePreview();
-  } catch (e) {
-    result.innerHTML =
-      `<p role="alert">${escapeHtml(e.message || 'خطای نامشخص هنگام اعمال پروفایل')}</p>`;
-  } finally {
-    applyButton.disabled = false;
-    previewButton.disabled = false;
-    select.disabled = false;
-    risk.disabled = false;
-  }
-}
-
 async function initializeProfilePreview() {
   const select = $('profile-target');
   const button = $('profile-preview-button');
@@ -478,7 +438,6 @@ async function initializeProfilePreview() {
       select.value = defaultProfile;
 
     button.addEventListener('click', renderProfilePreview);
-    $('profile-apply-button').addEventListener('click', applySelectedProfile);
     select.addEventListener('change', renderProfilePreview);
     await renderProfilePreview();
   } catch (e) {
