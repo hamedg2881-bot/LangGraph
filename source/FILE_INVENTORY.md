@@ -82,10 +82,10 @@ The published DLL and systemd unit contents have not yet been retrieved. Do not 
 | Host source path | Purpose | Canonical repository snapshot |
 |---|---|---|
 | /opt/ai/control-center/src/ControlCenter/ControlCenter.csproj | .NET 10 Web SDK project | source/control-center/ControlCenter.csproj |
-| /opt/ai/control-center/src/ControlCenter/Program.cs | Minimal API, status/resource collection, history/events APIs, legacy profile switching | source/control-center/Program.cs |
+| /opt/ai/control-center/src/ControlCenter/Program.cs | Minimal API, status/resource collection, history/events APIs, read-only Agent/Dynamo status; legacy profile-switch route disabled with HTTP 410 | source/control-center/Program.cs |
 | /opt/ai/control-center/src/ControlCenter/HistoryBackgroundService.cs | 60-second resource sampling, readiness events, 30-day retention | source/control-center/HistoryBackgroundService.cs |
-| /opt/ai/control-center/src/ControlCenter/wwwroot/index.html | Persian RTL dashboard UI | source/control-center/wwwroot/index.html |
+| /opt/ai/control-center/src/ControlCenter/wwwroot/index.html | Persian RTL dashboard UI with read-only Agent/Dynamo runtime panel | source/control-center/wwwroot/index.html |
 
 The four source files above were fetched from the user's uploaded text snapshots under archive/control-center/source/ and copied byte-for-byte as UTF-8 text into source/control-center/. The original archive is retained as provenance; source/control-center/ is the canonical editable source snapshot going forward.
 
-The exact source snapshot has now been inspected. It is a baseline snapshot supplied from the host; no source edits, build, deployment, or service restart were performed as part of this archival step.
+The initial source snapshot was inspected and then updated in the canonical repository: Program.cs now exposes GET /api/ai-status and disables profile mutation with HTTP 410; index.html shows Agent/Dynamo status, removes profile-apply controls, and escapes dynamic service fields. ControlCenter.csproj and HistoryBackgroundService.cs remain unchanged. These repository edits have not yet been synchronized to the host, built, or deployed.
