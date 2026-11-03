@@ -82,9 +82,9 @@ The published DLL and systemd unit contents have not yet been retrieved. Do not 
 | Host source path | Purpose | Canonical repository snapshot |
 |---|---|---|
 | /opt/ai/control-center/src/ControlCenter/ControlCenter.csproj | .NET 10 Web SDK project | source/control-center/ControlCenter.csproj |
-| /opt/ai/control-center/src/ControlCenter/Program.cs | Minimal API, status/resource collection, history/events APIs, read-only Agent/Dynamo status; legacy profile-switch route disabled with HTTP 410 | source/control-center/Program.cs |
-| /opt/ai/control-center/src/ControlCenter/HistoryBackgroundService.cs | 60-second resource sampling, readiness events, 30-day retention | source/control-center/HistoryBackgroundService.cs |
-| /opt/ai/control-center/src/ControlCenter/wwwroot/index.html | Persian RTL dashboard UI with read-only Agent/Dynamo runtime panel | source/control-center/wwwroot/index.html |
+| /opt/ai/control-center/src/ControlCenter/Program.cs | Minimal API, host telemetry, Agent/Dynamo status, read-only Registry proxy with live per-model availability, history/events APIs; legacy profile-switch route disabled with HTTP 410 | source/control-center/Program.cs |
+| /opt/ai/control-center/src/ControlCenter/HistoryBackgroundService.cs | 60-second resource sampling, runtime readiness events, 30-day retention | source/control-center/HistoryBackgroundService.cs |
+| /opt/ai/control-center/src/ControlCenter/wwwroot/index.html | Persian RTL dashboard with Overview, Registry, Runtime/Workers, Resources/History, and Events sections | source/control-center/wwwroot/index.html |
 
 The four source files above were fetched from the user's uploaded text snapshots under archive/control-center/source/ and copied byte-for-byte as UTF-8 text into source/control-center/. The original archive is retained as provenance; source/control-center/ is the canonical editable source snapshot going forward.
 
@@ -115,3 +115,17 @@ The host route inventory was supplied on 2026-11-03 and is recorded in `progress
 | /opt/ai/langgraph-agent/app/main.py | FastAPI lifespan, shared PostgreSQL checkpointer, Registry initialization, router registration | source/app/main.py |
 
 The five newly captured files were copied from the exact user-provided host output. source/app/api/schemas.py already existed in the canonical repository and was verified against the supplied output. The app/registry/schema.sql body was not included in this host inspection output and remains pending exact capture. No secrets or environment files were archived.
+
+
+## Control Center modernization — 2026-11-03
+
+The canonical Control Center source has been redesigned in GitHub only:
+
+- `source/control-center/Program.cs`: replaced profile-manifest status with live Agent, Dynamo, fixed known-container runtime, host telemetry, and a server-side read-only Registry proxy. Registry results are enriched with the Agent's per-model live runtime/selectability endpoint. The Agent admin key is read only from `LANGGRAPH_ADMIN_API_KEY` and is never returned to the browser.
+- `source/control-center/wwwroot/index.html`: replaced the legacy profile UI with Persian RTL sections for Overview, Model Registry, Runtime/Workers, Resources/History, and Events. The Registry table shows approval, enablement, capabilities, context length, runtime availability, and selectability.
+- `source/control-center/HistoryBackgroundService.cs`: now records runtime readiness transitions from the new `/api/status` response.
+- `source/control-center/ControlCenter.csproj`: unchanged.
+
+Security boundary: only read-only Registry access is exposed in this iteration. Registry sync and approval/enablement mutations are intentionally not proxied until a separate Control Center admin authentication/session design is implemented. The service environment must receive `LANGGRAPH_ADMIN_API_KEY` through a protected server-side mechanism; never put it in appsettings committed to GitHub or browser code.
+
+These are GitHub source changes only. No host files, environment variables, build/publish output, systemd service, containers, or models have been changed or restarted. Build and API verification on the DGX host remain pending explicit approval.
