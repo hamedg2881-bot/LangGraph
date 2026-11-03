@@ -80,3 +80,39 @@ The original uploaded files remain under `archive/control-center/source/` as an 
 ### Agreed integration direction
 
 Keep the existing dashboard and service. Evolve it in place to read model catalog/approval/capabilities from the LangGraph Registry and live runtime/readiness from the Agent and Dynamo. Model lifecycle actions must go through the future safe Model Manager/Dynamo adapter, with active-request protection and queueing. Do not wire direct Docker/systemd profile switching into model selection. No host deployment or source modification was performed during this inspection.
+
+## Read-only Agent/Dynamo integration — 2026-11-03
+
+The canonical source snapshot now includes a read-only AI runtime panel:
+
+- `GET /api/ai-status` checks the LangGraph Agent at `LANGGRAPH_AGENT_URL` (default `http://127.0.0.1:8100`) using `/health` and `/v1/models`.
+- It checks the shared Dynamo frontend at `DYNAMO_URL` (default `http://127.0.0.1:8013`) using `/health`.
+- The UI displays Agent health, logical model IDs (expected to include `Auto`), and Dynamo health.
+- The UI's legacy profile preview is informational only; the profile apply controls have been removed.
+- `POST /api/profile-switch` is retained only as a compatibility response and returns HTTP 410 Gone. It no longer invokes Docker or systemd.
+- Dynamic service fields are HTML-escaped in the service cards.
+- `ControlCenter.csproj` and `HistoryBackgroundService.cs` were not changed.
+
+These edits are committed to the canonical GitHub source only. The DGX host source tree, published DLL, and running service have not been changed or tested with this version.
+
+### Deployment command after host-source synchronization and user approval
+
+Run from the DGX host only after confirming the host source matches this canonical snapshot and after explicit approval:
+
+```bash
+cd /opt/ai/control-center/src/ControlCenter && dotnet publish -c Release -o /opt/ai/control-center/publish
+```
+
+Then restart only with explicit approval:
+
+```bash
+sudo systemctl restart dgx-control-center.service && sudo systemctl is-active dgx-control-center.service
+```
+
+Verify the new endpoint and dashboard:
+
+```bash
+curl -fsS http://127.0.0.1:5090/api/ai-status
+```
+
+Expected: Agent health and model list are returned, and Dynamo health is checked against port 8013. A failed check is reported as a status value; it does not trigger a model load or service lifecycle action.
