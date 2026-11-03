@@ -112,3 +112,12 @@ Last verified: 2026-11-02
 - Updated deployment notes, source inventory, roadmap, and changelog.
 - These changes exist in GitHub only. Host source, published DLL, and `dgx-control-center.service` have not been changed, built, published, or restarted.
 - Before deployment, compare host source files with canonical GitHub content; then run the documented `dotnet publish` command only after explicit approval.
+
+
+## 2026-11-03 — Vision request verified through logical Auto
+
+- Sent a real multimodal request to `POST /v1/chat/completions` on the LangGraph Agent with `model=Auto`, Persian text, and a JPEG data URL encoded as Base64.
+- The Agent returned HTTP success with a substantive Persian description of the document in the image; usage reported 1,586 prompt tokens and 1,445 completion tokens.
+- Together with the previously verified Auto text request and Dynamo worker registration/routing logs for namespace `qwen38-vl`, this confirms the end-to-end Vision API path is operational.
+- The response's OCR field values have not been independently checked against the source image; semantic plausibility is not proof of exact transcription.
+- This was an API-level test. Image upload through the Open WebUI interface has not yet been separately verified in this test.
