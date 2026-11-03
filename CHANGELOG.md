@@ -40,3 +40,12 @@
 - Archived the exact base compose.yaml as deployment/compose.yaml.
 - Noted a host-port collision in the current definitions: the base Coder service and gateway both publish host port 8013. Do not start the dormant Coder service unchanged alongside the gateway.
 - No runtime services or host configuration were changed.
+
+
+## 2026-11-03 — Control Center baseline and corrected model goal
+- Confirmed the existing `dgx-control-center.service` is active and its health API responds successfully on port 5090.
+- Recorded the actual published assembly path and working directory.
+- Inspected existing profile/status APIs; identified legacy qwen-coder/qwen36-vl profile entries and old health ports 8010/8012.
+- Recorded that the existing Control Center must be extended in place; no replacement UI is to be created.
+- Corrected the model-management requirement: models must be independently runnable and selected by LangGraph; simultaneous execution of heavy models is not required.
+- No production files, services, containers, or model runtime state were changed.
