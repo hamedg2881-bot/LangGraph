@@ -101,3 +101,17 @@ The initial source snapshot was inspected and then updated in the canonical repo
 | /opt/ai/langgraph-agent/app/registry/schema.sql | PostgreSQL Registry schema | Pending exact source capture |
 
 The host route inventory was supplied on 2026-11-03 and is recorded in `progress/current-status.md` and `deployment/control-center.md`. No exact source body has been fabricated or added to the source tree.
+
+
+## Agent Registry source snapshots — captured 2026-11-03
+
+| Host path | Purpose | Canonical repository snapshot |
+|---|---|---|
+| /opt/ai/langgraph-agent/app/api/admin_routes.py | Registry list/sync/approve/reject/update/enable/disable/status API | source/app/api/admin_routes.py |
+| /opt/ai/langgraph-agent/app/api/admin_auth.py | Constant-time Bearer admin authentication | source/app/api/admin_auth.py |
+| /opt/ai/langgraph-agent/app/api/schemas.py | Chat and public model-list Pydantic schemas | source/app/api/schemas.py (previously archived; exact host output matched) |
+| /opt/ai/langgraph-agent/app/registry/repository.py | PostgreSQL Registry repository and policy mutations | source/app/registry/repository.py |
+| /opt/ai/langgraph-agent/app/registry/database.py | Async PostgreSQL pool and Registry schema initialization | source/app/registry/database.py |
+| /opt/ai/langgraph-agent/app/main.py | FastAPI lifespan, shared PostgreSQL checkpointer, Registry initialization, router registration | source/app/main.py |
+
+The five newly captured files were copied from the exact user-provided host output. source/app/api/schemas.py already existed in the canonical repository and was verified against the supplied output. The app/registry/schema.sql body was not included in this host inspection output and remains pending exact capture. No secrets or environment files were archived.
