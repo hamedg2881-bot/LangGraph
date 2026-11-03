@@ -74,3 +74,18 @@ This inventory tracks project files created or changed on the DGX Spark host. Sn
 | /etc/systemd/system/dgx-control-center.service | Control Center systemd unit | deployment/control-center.md (unit facts; exact unit snapshot pending retrieval) |
 
 The published DLL and systemd unit contents have not yet been retrieved. Do not invent source snapshots. Retrieve source files from the host before archiving implementation code. Do not commit secrets or publish output containing credentials.
+
+
+
+## Control Center source snapshot — retrieved 2026-11-03
+
+| Host source path | Purpose | Canonical repository snapshot |
+|---|---|---|
+| /opt/ai/control-center/src/ControlCenter/ControlCenter.csproj | .NET 10 Web SDK project | source/control-center/ControlCenter.csproj |
+| /opt/ai/control-center/src/ControlCenter/Program.cs | Minimal API, status/resource collection, history/events APIs, legacy profile switching | source/control-center/Program.cs |
+| /opt/ai/control-center/src/ControlCenter/HistoryBackgroundService.cs | 60-second resource sampling, readiness events, 30-day retention | source/control-center/HistoryBackgroundService.cs |
+| /opt/ai/control-center/src/ControlCenter/wwwroot/index.html | Persian RTL dashboard UI | source/control-center/wwwroot/index.html |
+
+The four source files above were fetched from the user's uploaded text snapshots under archive/control-center/source/ and copied byte-for-byte as UTF-8 text into source/control-center/. The original archive is retained as provenance; source/control-center/ is the canonical editable source snapshot going forward.
+
+The exact source snapshot has now been inspected. It is a baseline snapshot supplied from the host; no source edits, build, deployment, or service restart were performed as part of this archival step.
