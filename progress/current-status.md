@@ -69,3 +69,23 @@ Last verified: 2026-11-02
 - Do not stop, restart, rebuild, install, download, or activate services/models without explicit user approval.
 - Keep status, deployment docs, source inventory, and changelog synchronized with verified changes.
 - Never commit config/agent.env, credentials, API keys, database contents, or host backup bundles.
+
+
+## 2026-11-03 — Existing Control Center verified
+
+- `dgx-control-center.service` is active.
+- systemd launches `/usr/bin/dotnet /opt/ai/control-center/publish/ControlCenter.dll` with working directory `/opt/ai/control-center/publish`.
+- `GET /api/health` on port 5090 returned `{"status":"ok","application":"DGX Spark Control Center",...}`.
+- `GET /api/profiles` shows legacy `coding` and `image` profiles. Their service definitions still reference `qwen-coder` and `qwen36-vl`, with health endpoints on ports 8010 and 8012.
+- `GET /api/status` reports host resources and legacy service checks. The old model health URLs do not reflect the current Dynamo frontend on port 8013 and must not be used as authoritative model runtime status.
+- Latest observed host resource snapshot: total 121.69 GiB, available 9.47 GiB, used 112.21 GiB; no model load was attempted.
+- No Control Center files, service settings, containers, models, or host configuration were changed during this inspection.
+
+## Corrected model-management goal
+
+- Each model needs to be independently runnable within the shared architecture; simultaneous execution/residency of heavy models is not a requirement.
+- LangGraph selects the best eligible model for each request.
+- Dynamo remains the runtime/inference layer and manages worker execution.
+- Registry represents model catalog, capabilities, approval, and enablement independently from current runtime residency.
+- The existing Control Center is the management UI to extend; do not create a second dashboard or replace it.
+- Next work: map existing Control Center endpoints/UI to LangGraph Registry and Dynamo runtime, then plan a minimal in-place extension.
