@@ -119,7 +119,7 @@ async function loadRegistry(){
  $('registry-refresh').disabled=true;$('registry-note').textContent='در حال دریافت Registry…';
  try{const r=await fetch('/api/registry/models',{cache:'no-store'});if(!r.ok){const p=await r.json().catch(()=>({}));throw new Error(p.detail||p.title||('HTTP '+r.status))}
  const data=await r.json();renderRegistry(data.data||[]);$('registry-note').textContent='تعداد مدل‌های ثبت‌شده: '+(data.data||[]).length;
- }catch(e){$('registry-note').textContent='Registry در دسترس نیست: '+e.message;$('registry-rows').innerHTML='<tr><td colspan="7" class="empty">'+esc(e.message)+'</td></tr>'}
+ }catch(e){$('registry-note').textContent='Registry در دسترس نیست: '+e.message;$('registry-rows').innerHTML='<tr><td colspan="9" class="empty">'+esc(e.message)+'</td></tr>'}
  finally{$('registry-refresh').disabled=false}
 }
 async function refresh(){
