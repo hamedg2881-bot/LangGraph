@@ -89,3 +89,16 @@ Last verified: 2026-11-02
 - Registry represents model catalog, capabilities, approval, and enablement independently from current runtime residency.
 - The existing Control Center is the management UI to extend; do not create a second dashboard or replace it.
 - Next work: map existing Control Center endpoints/UI to LangGraph Registry and Dynamo runtime, then plan a minimal in-place extension.
+
+
+
+## 2026-11-03 — Control Center source reviewed and archived
+
+- Read the complete user-provided text snapshots for `Program.cs`, `HistoryBackgroundService.cs`, `index.html`, and `ControlCenter.csproj`.
+- Copied the exact source snapshots into `source/control-center/`; original intake files remain under `archive/control-center/source/`.
+- The implementation contains host resource/status APIs, 60-second history sampling, 30-day retention, a Persian RTL dashboard, and legacy profile switching.
+- The legacy profile-switch API executes Docker/systemd start/stop commands directly and is not suitable as the model lifecycle manager because it does not coordinate request leases, draining, or queueing.
+- The inspected source binds to `0.0.0.0:5090` and contains no application-level authentication/authorization middleware; the mutating profile-switch route therefore needs to be treated as a security issue before continued use.
+- UI output escaping is inconsistent for service fields; harden rendering before adding more dynamic data.
+- The UI text says read-only while a mutating profile-switch feature is present.
+- No production source, service, deployment, container, or model state was changed. Only GitHub documentation/source snapshots were updated.
