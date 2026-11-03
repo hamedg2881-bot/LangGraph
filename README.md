@@ -23,6 +23,7 @@ This repository records the agreed architecture, implementation decisions, deplo
 - [Tracked file inventory](source/FILE_INVENTORY.md)
 - [Database schema](database/schema.sql)
 - [Deployment notes](deployment/services.md)
+- [Existing Control Center](deployment/control-center.md)
 - [Environment template](deployment/agent.env.example)
 - [Operations](operations/commands.md)
 
