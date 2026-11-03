@@ -82,3 +82,13 @@
 - Marked exact admin route/auth/schema source snapshots as pending until their full contents are captured; no source code or schema was invented.
 - Reaffirmed that the existing Control Center is to be modernized in place and legacy profile semantics are obsolete.
 - Documentation-only update; no DGX host files, services, containers, databases, or models were changed.
+
+
+## 2026-11-03 — Agent Registry source snapshots archived
+
+- Archived exact user-supplied host source for Agent admin routes, Bearer auth, Registry repository, Registry database pool, and FastAPI startup/lifespan.
+- Verified the existing archived Pydantic schemas match the newly supplied host output.
+- Confirmed router-wide admin auth, constant-time Bearer token comparison, Dynamo-backed discovery sync, decision/audit writes, metadata/capability patching, and live per-model availability/selectability semantics.
+- Documented API validation caveats and the absence of queue or worker lifecycle endpoints.
+- Updated source inventory, current status, and Control Center integration contract.
+- Documentation/source archival only: no DGX host files, running services, databases, containers, or models were changed. No secrets were committed.
