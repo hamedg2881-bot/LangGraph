@@ -190,3 +190,27 @@ ModelDecision accepts only optional notes; extra fields are forbidden. ModelUpda
 - PATCH may update metadata and/or replace the capability set. The repository validates capabilities against the five supported values.
 - The current PATCH handler returns updated=true even if the payload contains no fields. A capabilities validation ValueError is not translated to a specific HTTP 4xx in the route. Control Center should validate inputs client-side and surface API errors; a future Agent hardening change may improve these semantics.
 - No request queue, active lease, or worker lifecycle API exists in the inspected route set. Do not show queue metrics or offer load/unload/start/stop controls.
+
+
+## Control Center modernization source — 2026-11-03
+
+The canonical source under `source/control-center/` has been redesigned in GitHub. The existing service identity, port, publish path, and working directory are unchanged in this source-only step.
+
+### Current source API
+
+- `GET /api/health`: application health and source version marker.
+- `GET /api/status`: host resources; Agent health and logical model IDs; Dynamo frontend health and model discovery; fixed known-container runtime states.
+- `GET /api/ai-status`: compatibility status view for Agent and Dynamo.
+- `GET /api/registry/models`: read-only server-side proxy to Agent `GET /admin/models`, enriched with each model's `GET /admin/models/{model_id}/status` result (`runtime_status`, `selectable`).
+- `GET /api/history` and `GET /api/events`: existing JSONL history/event views.
+- `POST /api/profile-switch`: HTTP 410; direct Docker/systemd profile switching is retired.
+
+The Registry proxy reads `LANGGRAPH_ADMIN_API_KEY` from the Control Center process environment. The key is attached only to server-to-server requests and must never be written to `appsettings*.json`, committed, returned in API responses, or exposed to browser JavaScript. If the variable is absent, Registry reads return 503. Agent base URL is configurable with `LANGGRAPH_AGENT_URL` (default `http://127.0.0.1:8100`); Dynamo frontend with `DYNAMO_URL` (default `http://127.0.0.1:8013`).
+
+### Security and scope boundary
+
+This iteration deliberately exposes Registry reads only. It does not expose `/admin/models/sync`, approve/reject, enable/disable, or PATCH through Control Center. The current service has no application-level administrator authentication/session design; adding mutation proxies before that is implemented would create unauthenticated administrative writes. No queue, lease, load/unload, or worker start/stop controls are implemented because the Agent/Model Manager contract does not currently provide them.
+
+### Build and deployment status
+
+All modernization edits are in GitHub only. The DGX host source, published DLL, environment, and running service have not been changed. Do not copy/publish/restart until explicit user approval. Before enabling Registry reads in production, provide `LANGGRAPH_ADMIN_API_KEY` to the service through a protected systemd environment/credential mechanism outside the repository; do not reuse or expose the Agent's entire `agent.env` file.
