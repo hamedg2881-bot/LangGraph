@@ -52,7 +52,7 @@ button,select{font:inherit;border:1px solid #405777;border-radius:9px;padding:8p
 <section class="page" id="page-registry">
  <div class="toolbar"><div><h2>Model Registry</h2><div class="note small">منبع حقیقت برای تأیید، فعال‌بودن و قابلیت‌های هر مدل</div></div><button id="registry-refresh">بارگذاری مجدد</button></div>
  <div id="registry-note" class="note small">در حال اتصال امن سرور به Agent Registry…</div>
- <div class="table-wrap"><table><thead><tr><th>شناسه / نام</th><th>Provider</th><th>تأیید</th><th>فعال</th><th>قابلیت‌ها</th><th>Context</th><th>آخرین مشاهده</th></tr></thead><tbody id="registry-rows"><tr><td colspan="7" class="empty">در انتظار داده…</td></tr></tbody></table></div>
+ <div class="table-wrap"><table><thead><tr><th>شناسه / نام</th><th>Provider</th><th>تأیید</th><th>فعال</th><th>قابلیت‌ها</th><th>Context</th><th>Runtime</th><th>قابل انتخاب</th><th>آخرین مشاهده</th></tr></thead><tbody id="registry-rows"><tr><td colspan="9" class="empty">در انتظار داده…</td></tr></tbody></table></div>
  <p class="note small">کلید مدیریتی Agent در سرور نگهداری می‌شود و به مرورگر ارسال نمی‌شود. عملیات تغییردهنده تا استقرار احراز هویت مدیریتی مستقل در این پنل فعال نشده‌اند.</p>
 </section>
 
@@ -111,8 +111,8 @@ function renderRuntime(items){
 }
 function renderRegistry(items){
  registryItems=items||[];
- const rows=registryItems.map(m=>'<tr><td><strong>'+esc(m.display_name||m.id)+'</strong><div class="note small">'+esc(m.id)+'</div></td><td>'+esc(m.provider)+'</td><td><span class="'+cls(m.approval_status)+'">'+esc(m.approval_status)+'</span></td><td><span class="'+(m.is_enabled?'ok':'bad')+'">'+(m.is_enabled?'بله':'خیر')+'</span></td><td>'+(m.capabilities||[]).map(c=>'<span class="cap">'+esc(c)+'</span>').join('')+'</td><td>'+esc(fmt(m.context_length))+'</td><td>'+esc(m.last_seen_at?new Date(m.last_seen_at).toLocaleString('fa-IR'):'—')+'</td></tr>').join('');
- $('registry-rows').innerHTML=rows||'<tr><td colspan="7" class="empty">مدلی در Registry ثبت نشده است.</td></tr>';
+ const rows=registryItems.map(m=>'<tr><td><strong>'+esc(m.display_name||m.id)+'</strong><div class="note small">'+esc(m.id)+'</div></td><td>'+esc(m.provider)+'</td><td><span class="'+cls(m.approval_status)+'">'+esc(m.approval_status)+'</span></td><td><span class="'+(m.is_enabled?'ok':'bad')+'">'+(m.is_enabled?'بله':'خیر')+'</span></td><td>'+(m.capabilities||[]).map(c=>'<span class="cap">'+esc(c)+'</span>').join('')+'</td><td>'+esc(fmt(m.context_length))+'</td><td><span class="'+cls(m.runtime_status)+'">'+esc(m.runtime_status||'unknown')+'</span></td><td><span class="'+(m.selectable?'ok':'warn')+'">'+(m.selectable?'بله':'خیر')+'</span></td><td>'+esc(m.last_seen_at?new Date(m.last_seen_at).toLocaleString('fa-IR'):'—')+'</td></tr>').join('');
+ $('registry-rows').innerHTML=rows||'<tr><td colspan="9" class="empty">مدلی در Registry ثبت نشده است.</td></tr>';
  $('overview-models').innerHTML=registryItems.slice(0,4).map(m=>card(m.display_name||m.id,m.approval_status,'قابلیت‌ها: '+(m.capabilities||[]).join('، ')+' · فعال: '+(m.is_enabled?'بله':'خیر'))).join('')||'<div class="empty">فهرست Registry خالی است.</div>';
 }
 async function loadRegistry(){
