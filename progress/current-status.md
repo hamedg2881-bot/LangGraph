@@ -102,3 +102,13 @@ Last verified: 2026-11-02
 - UI output escaping is inconsistent for service fields; harden rendering before adding more dynamic data.
 - The UI text says read-only while a mutating profile-switch feature is present.
 - No production source, service, deployment, container, or model state was changed. Only GitHub documentation/source snapshots were updated.
+
+## 2026-11-03 — Control Center source integration prepared in GitHub
+
+- Updated canonical `source/control-center/Program.cs`: added read-only `GET /api/ai-status` for LangGraph Agent (`LANGGRAPH_AGENT_URL`, default port 8100) and Dynamo (`DYNAMO_URL`, default port 8013); Agent model IDs are read from `/v1/models`.
+- Disabled the legacy `POST /api/profile-switch` behavior. The route now returns HTTP 410 Gone and no longer executes Docker/systemd start/stop commands.
+- Updated `source/control-center/wwwroot/index.html`: added Agent/Dynamo status cards, removed profile apply controls, retained legacy profile preview as read-only, and escaped dynamic service-card fields.
+- `ControlCenter.csproj` and `HistoryBackgroundService.cs` remain unchanged.
+- Updated deployment notes, source inventory, roadmap, and changelog.
+- These changes exist in GitHub only. Host source, published DLL, and `dgx-control-center.service` have not been changed, built, published, or restarted.
+- Before deployment, compare host source files with canonical GitHub content; then run the documented `dotnet publish` command only after explicit approval.
