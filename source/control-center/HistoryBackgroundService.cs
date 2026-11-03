@@ -37,16 +37,15 @@ public sealed class HistoryBackgroundService : BackgroundService
                         resources = status["resources"]?.DeepClone()
                     }, stoppingToken);
 
-                    if (status["services"] is JsonArray services)
+                    if (status["runtime"] is JsonArray services)
                     {
                         foreach (var service in services)
                         {
                             if (service is null) continue;
 
-                            var name = service["name"]?.GetValue<string>() ?? "unknown";
+                            var name = service["id"]?.GetValue<string>() ?? "unknown";
                             var readiness = service["readiness"]?.GetValue<string>() ?? "unknown";
                             var runtime = service["runtimeStatus"]?.GetValue<string>() ?? "unknown";
-                            var endpoint = service["endpointStatus"]?.GetValue<string>() ?? "unknown";
 
                             if (!_previousReadiness.TryGetValue(name, out var previous) ||
                                 previous != readiness)
@@ -54,12 +53,11 @@ public sealed class HistoryBackgroundService : BackgroundService
                                 await AppendAsync("events", new
                                 {
                                     timestamp = now,
-                                    type = "service-readiness-changed",
+                                    type = "runtime-readiness-changed",
                                     service = name,
                                     previousReadiness = previous ?? "unknown",
                                     readiness,
-                                    runtimeStatus = runtime,
-                                    endpointStatus = endpoint
+                                    runtimeStatus = runtime
                                 }, stoppingToken);
 
                                 _previousReadiness[name] = readiness;
