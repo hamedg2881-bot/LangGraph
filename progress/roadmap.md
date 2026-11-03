@@ -53,3 +53,15 @@
 - [ ] Define the smallest in-place integration with LangGraph Registry and Dynamo runtime.
 - [ ] Replace legacy model status assumptions with live Registry/runtime data while preserving unrelated Control Center functionality.
 - [ ] Verify model catalog, approval/capability state, runtime readiness, and resource status in the existing UI.
+
+
+### Control Center source review — 2026-11-03
+
+- [x] Retrieve and inspect the complete existing Control Center source/UI snapshot.
+- [x] Preserve the original intake archive and create canonical editable snapshots under `source/control-center/`.
+- [ ] Confirm that the archived source snapshot matches the current host working-tree files before any deployment.
+- [ ] Design a minimal in-place read-only integration with Registry, Agent, and Dynamo status.
+- [ ] Remove or secure legacy profile mutation before exposing administrative controls.
+- [ ] Replace direct Docker/systemd profile switching with a safe Model Manager lifecycle API after Dynamo 1.6.1 lifecycle support is validated.
+- [ ] Add consistent output encoding and authentication/authorization tests.
+- [ ] Build and test the Control Center without restarting production until explicitly approved.
