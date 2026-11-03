@@ -54,3 +54,16 @@ The live config/agent.env must remain on the host and must never be committed. I
 - Do not restart, stop, rebuild, install, download, or activate services/models without explicit user approval.
 - Do not run Coder and Vision heavy workers together without explicit approval and a verified resource plan.
 - Verify service startup logs, runtime model discovery, Registry eligibility, and health after an approved worker switch.
+
+
+## Existing DGX Spark Control Center — verified 2026-11-03
+
+- systemd unit: `dgx-control-center.service`; status verified active.
+- Executable: `/usr/bin/dotnet /opt/ai/control-center/publish/ControlCenter.dll`.
+- Working directory: `/opt/ai/control-center/publish`.
+- Application: DGX Spark Control Center (.NET 10); host port 5090.
+- Health endpoint: `http://127.0.0.1:5090/api/health`; verified status ok on 2026-11-03.
+- Existing endpoints verified: `/api/profiles` and `/api/status`.
+- Existing profiles are legacy `coding` and `image`; their model service health URLs reference ports 8010 and 8012. Current Dynamo frontend is on 8013, so those profile health checks are stale for current model runtime discovery.
+- The Control Center is the existing UI to extend for Registry and Dynamo management. Do not create a new dashboard or replace this service.
+- No deployment/service changes were made during verification.
