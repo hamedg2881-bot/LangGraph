@@ -116,3 +116,40 @@ curl -fsS http://127.0.0.1:5090/api/ai-status
 ```
 
 Expected: Agent health and model list are returned, and Dynamo health is checked against port 8013. A failed check is reported as a status value; it does not trigger a model load or service lifecycle action.
+
+
+## Agent Registry contract discovered from host — 2026-11-03
+
+The user-provided host route inventory confirms the following LangGraph Agent endpoints:
+
+| Method | Route | Purpose |
+|---|---|---|
+| GET | `/admin/models` | Read Registry catalog |
+| POST | `/admin/models/sync` | Discover/synchronize Dynamo model IDs into Registry |
+| POST | `/admin/models/{model_id}/approve` | Approve a model |
+| POST | `/admin/models/{model_id}/reject` | Reject a model |
+| PATCH | `/admin/models/{model_id}` | Update curated model fields |
+| POST | `/admin/models/{model_id}/enable` | Enable an approved model |
+| POST | `/admin/models/{model_id}/disable` | Disable a model |
+| GET | `/admin/models/{model_id}/status` | Read model status |
+
+All admin routes use the Agent's separate Bearer admin authentication. The secret must remain server-side and must never be sent to browser JavaScript. The exact route implementations and Pydantic schemas still need exact source snapshots before wiring mutation forms.
+
+Public Agent routes remain `GET /v1/models` (logical `Auto` only), `POST /v1/chat/completions`, and `GET /health`. Do not confuse the public logical model list with the Registry catalog.
+
+The inspected route inventory contains no request queue, in-flight request, or queue-management endpoint. Therefore the first Control Center modernization must not display invented queue state or provide queue/lifecycle controls. Model lifecycle remains outside the Control Center until a safe Model Manager contract exists.
+
+## Modernization scope
+
+The legacy `coding`/`image` profile UI and profile manifest are obsolete for the current architecture. The existing Control Center will be redesigned in place around:
+
+1. Dashboard and platform health.
+2. Model Registry (catalog, capabilities, approval, enablement, discovery).
+3. Dynamo runtime and worker discovery.
+4. Resource telemetry and history.
+5. Events and diagnostics.
+6. System dependencies (Agent, Dynamo frontend, etcd, NATS, PostgreSQL, Open WebUI).
+
+Registry is authoritative for administrative model policy; Dynamo is authoritative for live worker availability; LangGraph is authoritative for per-request selection. Do not wire direct Docker/systemd start/stop actions into model selection. Keep PostgreSQL checkpointer and conversation data untouched.
+
+The route inventory above came from the user's supplied host inspection output. The exact source files `app/api/admin_routes.py`, `app/api/admin_auth.py`, `app/api/schemas.py`, and `app/registry/schema.sql` have not yet been archived in this repository. Do not infer request bodies or response schemas from route names alone.
