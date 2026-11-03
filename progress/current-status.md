@@ -150,3 +150,20 @@ The user supplied complete host output for app/api/admin_routes.py, app/api/admi
 - app/main.py initializes Registry DB using the same PostgreSQL connection string as the LangGraph checkpointer, but a separate Registry pool; shutdown closes the Registry pool. Do not modify or reset checkpointer data.
 - app/registry/schema.sql was not included in the supplied command output; its exact host body remains pending capture.
 - No host files, services, containers, database rows, or model state were modified during this source archival step.
+
+
+## 2026-11-03 — Control Center Registry/runtime redesign (GitHub source only)
+
+- Replaced the old profile-manifest-driven `/api/status` with live checks for LangGraph Agent health and logical `/v1/models`, Dynamo frontend health and served-model discovery, fixed known Docker container states, and host resources.
+- Dynamo discovery tries the frontend `/v1/models` route first and falls back to `/models`.
+- Added read-only `GET /api/registry/models`, which proxies the Agent's authenticated Registry list server-to-server and enriches each row using the Agent's `/admin/models/{model_id}/status` contract. Runtime availability and `selectable` therefore come from the Agent/Dynamo check, not assumptions in the browser.
+- `LANGGRAPH_ADMIN_API_KEY` is read from the Control Center process environment only. It is never sent to browser JavaScript or returned by the proxy. If absent, Registry endpoint returns 503.
+- Replaced the old profile preview dashboard with Persian RTL Overview, Registry, Runtime/Workers, Resources/History, and Events sections. Removed all profile manifest UI and kept profile-switch as HTTP 410.
+- Updated HistoryBackgroundService to record readiness transitions from the new runtime list.
+- Registry writes (sync, approve/reject, enable/disable, metadata/capability changes) are intentionally not exposed yet: Control Center has no application-level admin session/authentication design, and exposing these routes anonymously would be unsafe. No queue or model lifecycle controls are shown.
+- No host files, service environment, build/publish output, systemd service, containers, PostgreSQL data, or model state were modified. All changes above are committed in GitHub only; compilation and host API verification are pending.
+
+### Immediate next steps
+1. Review the new source for compile/runtime issues and verify the exact Dynamo frontend model-list path.
+2. Design protected Control Center administrator authentication and server-side secret injection before adding Registry write operations.
+3. After explicit approval, synchronize source to `/opt/ai/control-center`, build/publish, restart `dgx-control-center.service`, and verify health/status/Registry APIs.
