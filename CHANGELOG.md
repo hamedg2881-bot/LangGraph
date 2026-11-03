@@ -92,3 +92,14 @@
 - Documented API validation caveats and the absence of queue or worker lifecycle endpoints.
 - Updated source inventory, current status, and Control Center integration contract.
 - Documentation/source archival only: no DGX host files, running services, databases, containers, or models were changed. No secrets were committed.
+
+
+## 2026-11-03 — Control Center Registry/runtime redesign (source-only)
+
+- Replaced profile-manifest status with live LangGraph Agent, Dynamo frontend/model discovery, known Docker runtime states, and host telemetry.
+- Added a server-side read-only Agent Registry proxy enriched with per-model runtime availability and selectability.
+- Kept the Agent admin key server-side via process environment; no browser exposure or committed secret values.
+- Rebuilt the Persian RTL UI around Overview, Model Registry, Runtime/Workers, Resources/History, and Events; removed obsolete profile preview.
+- Updated resource history sampling to track runtime readiness transitions.
+- Intentionally withheld Registry mutation routes pending Control Center administrator authentication. Retained HTTP 410 for legacy profile switching and did not add worker lifecycle/queue controls.
+- GitHub source changes only; no host files, service environment, build, publish, restart, containers, database, or models were changed. Build/runtime verification remains pending.
