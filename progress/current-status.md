@@ -134,3 +134,19 @@ The user supplied the host inspection output for `/opt/ai/langgraph-agent`. It c
 - The exact bodies of the admin route/schema files have not yet been archived as source snapshots. Their route inventory is recorded here; source snapshots must only be added after exact contents are obtained.
 
 This output is now part of the canonical project record. Do not ask the user to repeat this route discovery.
+
+
+## 2026-11-03 — Agent Registry source bodies captured
+
+The user supplied complete host output for app/api/admin_routes.py, app/api/admin_auth.py, app/api/schemas.py, app/registry/repository.py, app/registry/database.py, and app/main.py.
+
+- Archived exact snapshots: source/app/api/admin_routes.py, source/app/api/admin_auth.py, source/app/registry/repository.py, source/app/registry/database.py, and source/app/main.py.
+- Verified the already archived source/app/api/schemas.py matches the supplied host output.
+- Admin routes are protected at router level by Depends(require_admin). Authentication checks Bearer scheme and uses secrets.compare_digest; missing configuration returns 503 and invalid credentials return 401.
+- GET /admin/models returns Registry rows including approval, enablement, metadata, timestamps, and capabilities.
+- POST /admin/models/sync reads Dynamo's /models endpoint and calls sync_discovered_models. Repository upsert for existing IDs updates only last_seen_at and updated_at, preserving approval, enabled state, capabilities, and curated metadata.
+- Approve/reject and enable/disable write Registry decisions and audit rows. PATCH can update display name, architecture, quantization, context length, and capabilities.
+- Per-model status reports runtime available, unavailable, or unknown; selectable requires approved + enabled + available.
+- app/main.py initializes Registry DB using the same PostgreSQL connection string as the LangGraph checkpointer, but a separate Registry pool; shutdown closes the Registry pool. Do not modify or reset checkpointer data.
+- app/registry/schema.sql was not included in the supplied command output; its exact host body remains pending capture.
+- No host files, services, containers, database rows, or model state were modified during this source archival step.
