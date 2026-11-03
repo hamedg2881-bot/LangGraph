@@ -73,3 +73,12 @@
 - This verifies the Agent's multimodal request path to the Vision-capable runtime at API level, following successful Dynamo registration and Auto text-chat verification.
 - OCR accuracy has not been independently validated against the source image, and the Open WebUI image-upload path remains a separate UI-level test.
 - No model, container, service, or deployment configuration was changed by this test.
+
+
+## 2026-11-03 — Agent Registry contract inventory captured for Control Center redesign
+- Recorded the exact Agent admin route inventory from the user's host inspection output: list, sync, approve/reject, patch, enable/disable, and per-model status.
+- Recorded that public `/v1/models` is distinct from the admin Registry and exposes logical `Auto`.
+- Confirmed the inspected Agent route inventory contains no queue/request-status API; queue metrics and controls must not be fabricated in the dashboard.
+- Marked exact admin route/auth/schema source snapshots as pending until their full contents are captured; no source code or schema was invented.
+- Reaffirmed that the existing Control Center is to be modernized in place and legacy profile semantics are obsolete.
+- Documentation-only update; no DGX host files, services, containers, databases, or models were changed.
