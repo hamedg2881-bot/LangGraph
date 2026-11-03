@@ -82,3 +82,20 @@
 - [x] Confirm the Vision API returned a structured Persian description and token usage.
 - [ ] Separately verify image upload and response through the Open WebUI browser interface.
 - [ ] Validate OCR field accuracy against the original image before treating extracted business/document values as authoritative.
+
+
+## Control Center full modernization — 2026-11-03
+
+- [x] Confirm existing .NET 10 Control Center is active on port 5090 and must be evolved in place.
+- [x] Capture existing dashboard/API/history implementation and identify obsolete profile-based model checks.
+- [x] Capture Agent Registry route inventory from host output: list, sync, approve/reject, patch, enable/disable, per-model status.
+- [x] Confirm public Agent model endpoint remains logical `Auto`; admin Registry data is separate.
+- [x] Confirm no queue/request-status endpoint was present in inspected Agent routes; do not invent queue UI.
+- [ ] Archive exact Agent admin route, schema, auth, and Registry repository source files in GitHub after obtaining their exact contents.
+- [ ] Design Control Center backend adapter for authenticated Registry reads/actions, without exposing the Agent admin key to browser JavaScript.
+- [ ] Replace legacy profile dashboard concepts with Dashboard, Model Registry, Runtime/Workers, Resource Monitor, Events, and System views.
+- [ ] Add safe UI actions for Registry approval/enablement only after verifying request/response schemas and CSRF/auth boundary.
+- [ ] Add Dynamo worker discovery and dependency health (frontend, etcd, NATS, PostgreSQL, Agent) from authoritative sources.
+- [ ] Keep lifecycle controls read-only until a safe Model Manager API supports request leases, queueing, drain, and safe unload.
+- [ ] Remove/retire stale profile manifest usage only after the replacement is verified; retain backups during migration.
+- [ ] Build and test locally; deploy/restart only after explicit approval.
