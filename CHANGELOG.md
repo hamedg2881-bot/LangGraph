@@ -49,3 +49,11 @@
 - Recorded that the existing Control Center must be extended in place; no replacement UI is to be created.
 - Corrected the model-management requirement: models must be independently runnable and selected by LangGraph; simultaneous execution of heavy models is not required.
 - No production files, services, containers, or model runtime state were changed.
+
+
+## 2026-11-03 — Control Center source reviewed and organized
+- Retrieved the user's uploaded UTF-8 source snapshots for Program.cs, HistoryBackgroundService.cs, index.html, and ControlCenter.csproj.
+- Copied the exact snapshots into the canonical editable tree under source/control-center/ while retaining archive/control-center/source/ as the original intake archive.
+- Reviewed existing API behavior, history sampling, dashboard UI, and legacy profile switching.
+- Documented stale profile-based model control, missing application-level authentication on the mutating route, inconsistent UI output escaping, and the read-only-label mismatch.
+- No host source, published assembly, running service, container, or model runtime was changed.
