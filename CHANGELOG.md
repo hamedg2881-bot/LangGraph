@@ -65,3 +65,11 @@
 - Retained the old profile preview as informational/read-only and escaped dynamic service-card values.
 - Updated deployment instructions, source inventory, current status, and roadmap.
 - Source changes are committed in GitHub only; no host files, build output, systemd service, containers, or model runtime were changed.
+
+## 2026-11-03 — Auto Vision API end-to-end test
+
+- Sent a JPEG image as a Base64 data URL with a Persian prompt to the LangGraph Agent's OpenAI-compatible chat completions endpoint using logical model `Auto`.
+- Received a successful completion with a detailed Persian description of the document; reported usage was 1,586 prompt tokens and 1,445 completion tokens.
+- This verifies the Agent's multimodal request path to the Vision-capable runtime at API level, following successful Dynamo registration and Auto text-chat verification.
+- OCR accuracy has not been independently validated against the source image, and the Open WebUI image-upload path remains a separate UI-level test.
+- No model, container, service, or deployment configuration was changed by this test.
