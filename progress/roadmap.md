@@ -49,9 +49,9 @@
 - [x] Verify published application path and systemd working directory.
 - [x] Verify Control Center health endpoint on port 5090.
 - [x] Identify legacy profile model names and stale health endpoints (8010/8012).
-- [ ] Inspect existing Control Center source/UI and API implementation before editing.
-- [ ] Define the smallest in-place integration with LangGraph Registry and Dynamo runtime.
-- [ ] Replace legacy model status assumptions with live Registry/runtime data while preserving unrelated Control Center functionality.
+- [x] Inspect existing Control Center source/UI and API implementation before editing.
+- [x] Define and implement the first read-only in-place integration with LangGraph Agent and Dynamo health/model-list endpoints.
+- [ ] Complete Registry approval/capability integration; current first phase displays Agent logical model IDs and Dynamo health.
 - [ ] Verify model catalog, approval/capability state, runtime readiness, and resource status in the existing UI.
 
 
@@ -61,7 +61,15 @@
 - [x] Preserve the original intake archive and create canonical editable snapshots under `source/control-center/`.
 - [ ] Confirm that the archived source snapshot matches the current host working-tree files before any deployment.
 - [ ] Design a minimal in-place read-only integration with Registry, Agent, and Dynamo status.
-- [ ] Remove or secure legacy profile mutation before exposing administrative controls.
+- [x] Disable legacy profile mutation (HTTP 410); no lifecycle controls are exposed.
 - [ ] Replace direct Docker/systemd profile switching with a safe Model Manager lifecycle API after Dynamo 1.6.1 lifecycle support is validated.
-- [ ] Add consistent output encoding and authentication/authorization tests.
+- [ ] Complete a full output-encoding review and define auth/authorization before adding any future mutating API.
 - [ ] Build and test the Control Center without restarting production until explicitly approved.
+
+### Read-only integration source update — 2026-11-03
+
+- [x] Add Agent health and `/v1/models` status to the existing dashboard API.
+- [x] Add Dynamo `/health` status to the existing dashboard API.
+- [x] Remove profile apply UI and disable the old Docker/systemd profile-switch route.
+- [x] Escape dynamic service-card values.
+- [ ] Compare canonical source against host working tree, build, and test after explicit deployment approval.
