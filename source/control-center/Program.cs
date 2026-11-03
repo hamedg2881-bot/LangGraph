@@ -29,7 +29,7 @@ app.MapGet("/api/status", async (IHttpClientFactory factory) =>
     var agentHealth = await CheckEndpoint(client, $"{agentBase}/health");
     var agentModels = await GetJson(client, $"{agentBase}/v1/models");
     var dynamoHealth = await CheckEndpoint(client, $"{dynamoBase}/health");
-    var dynamoModels = await GetJson(client, $"{dynamoBase}/models");
+    var dynamoModels = await GetJson(client, $"{dynamoBase}/v1/models") ?? await GetJson(client, $"{dynamoBase}/models");
 
     var containers = new[]
     {
@@ -106,6 +106,23 @@ app.MapGet("/api/registry/models", async (IHttpClientFactory factory) =>
                 statusCode: StatusCodes.Status502BadGateway);
 
         var payload = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        if (payload?["data"] is JsonArray models)
+        {
+            foreach (var model in models)
+            {
+                var id = model?["id"]?.GetValue<string>();
+                if (string.IsNullOrWhiteSpace(id)) continue;
+                using var statusRequest = new HttpRequestMessage(
+                    HttpMethod.Get,
+                    $"{BaseUrl("LANGGRAPH_AGENT_URL", "http://127.0.0.1:8100")}/admin/models/{Uri.EscapeDataString(id)}/status");
+                statusRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+                using var statusResponse = await client.SendAsync(statusRequest);
+                if (!statusResponse.IsSuccessStatusCode) continue;
+                var statusPayload = JsonNode.Parse(await statusResponse.Content.ReadAsStringAsync());
+                model!["runtime_status"] = statusPayload?["runtime_status"]?.DeepClone();
+                model["selectable"] = statusPayload?["selectable"]?.DeepClone();
+            }
+        }
         return Results.Json(payload);
     }
     catch (TaskCanceledException)
