@@ -41,3 +41,15 @@
 - [ ] Test load, reuse, queue, safe unload, reload, and failure recovery with Coder and Vision sequentially before allowing concurrent residency.
 - [ ] Preserve Registry approvals and PostgreSQL conversation/checkpointer data across worker lifecycle transitions.
 
+
+
+## Existing Control Center integration
+
+- [x] Verify existing `dgx-control-center.service` is active.
+- [x] Verify published application path and systemd working directory.
+- [x] Verify Control Center health endpoint on port 5090.
+- [x] Identify legacy profile model names and stale health endpoints (8010/8012).
+- [ ] Inspect existing Control Center source/UI and API implementation before editing.
+- [ ] Define the smallest in-place integration with LangGraph Registry and Dynamo runtime.
+- [ ] Replace legacy model status assumptions with live Registry/runtime data while preserving unrelated Control Center functionality.
+- [ ] Verify model catalog, approval/capability state, runtime readiness, and resource status in the existing UI.
