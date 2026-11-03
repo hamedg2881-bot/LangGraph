@@ -57,3 +57,11 @@
 - Reviewed existing API behavior, history sampling, dashboard UI, and legacy profile switching.
 - Documented stale profile-based model control, missing application-level authentication on the mutating route, inconsistent UI output escaping, and the read-only-label mismatch.
 - No host source, published assembly, running service, container, or model runtime was changed.
+
+## 2026-11-03 — Control Center read-only Agent/Dynamo integration
+- Added `GET /api/ai-status` to report LangGraph Agent health and model IDs from `/v1/models`, plus shared Dynamo frontend health.
+- Added a Persian RTL dashboard panel for Agent and Dynamo status.
+- Disabled legacy `POST /api/profile-switch` with HTTP 410; removed profile-apply UI so Control Center cannot directly stop/start Docker or systemd model services.
+- Retained the old profile preview as informational/read-only and escaped dynamic service-card values.
+- Updated deployment instructions, source inventory, current status, and roadmap.
+- Source changes are committed in GitHub only; no host files, build output, systemd service, containers, or model runtime were changed.
