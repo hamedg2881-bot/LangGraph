@@ -153,3 +153,40 @@ The legacy `coding`/`image` profile UI and profile manifest are obsolete for the
 Registry is authoritative for administrative model policy; Dynamo is authoritative for live worker availability; LangGraph is authoritative for per-request selection. Do not wire direct Docker/systemd start/stop actions into model selection. Keep PostgreSQL checkpointer and conversation data untouched.
 
 The route inventory above came from the user's supplied host inspection output. The exact source files `app/api/admin_routes.py`, `app/api/admin_auth.py`, `app/api/schemas.py`, and `app/registry/schema.sql` have not yet been archived in this repository. Do not infer request bodies or response schemas from route names alone.
+
+
+## Exact Agent Registry contract — source captured 2026-11-03
+
+The exact host implementations are archived under source/app/ and the API contract is now verified from source, not inferred from route names.
+
+### Agent admin API
+
+All routes are mounted under /admin/models and the router applies Depends(require_admin) to every endpoint.
+
+| Method | Route | Behavior |
+|---|---|---|
+| GET | /admin/models | Registry list |
+| POST | /admin/models/sync | Fetch Dynamo /models, then upsert discovered models |
+| POST | /admin/models/{model_id}/approve | Approve with optional notes |
+| POST | /admin/models/{model_id}/reject | Reject with optional notes |
+| PATCH | /admin/models/{model_id} | Update display_name, architecture, quantization, context_length, and/or capabilities |
+| POST | /admin/models/{model_id}/enable | Enable with optional notes |
+| POST | /admin/models/{model_id}/disable | Disable with optional notes |
+| GET | /admin/models/{model_id}/status | Return approval, enabled, runtime_status, and selectable |
+
+ModelDecision accepts only optional notes; extra fields are forbidden. ModelUpdate accepts only the listed optional fields; extra fields are forbidden. Supported capabilities are chat, vision, reasoning, coding, and tool_calling.
+
+### Authentication and security
+
+- Admin auth reads the configured admin_api_key, accepts only a Bearer Authorization header, and compares the supplied key using secrets.compare_digest.
+- Missing key configuration returns 503; invalid/missing credentials return 401.
+- Control Center must proxy admin calls server-to-server. The admin key must never be sent to browser JavaScript, embedded in HTML, or returned by a Control Center endpoint.
+- Exact Agent source snapshots are in source/app/api/admin_routes.py, source/app/api/admin_auth.py, source/app/api/schemas.py, source/app/registry/repository.py, source/app/registry/database.py, and source/app/main.py.
+
+### Semantics and implementation caveats
+
+- Registry sync reads Dynamo /models. Existing model rows update only last_seen_at and updated_at; existing approval, enablement, capabilities, and curated metadata are preserved. New-row defaults are defined by the database schema; the schema's exact host source still needs archival.
+- Runtime availability is determined by a fresh Dynamo /models query. selectable is true only for approved + enabled + currently available.
+- PATCH may update metadata and/or replace the capability set. The repository validates capabilities against the five supported values.
+- The current PATCH handler returns updated=true even if the payload contains no fields. A capabilities validation ValueError is not translated to a specific HTTP 4xx in the route. Control Center should validate inputs client-side and surface API errors; a future Agent hardening change may improve these semantics.
+- No request queue, active lease, or worker lifecycle API exists in the inspected route set. Do not show queue metrics or offer load/unload/start/stop controls.
