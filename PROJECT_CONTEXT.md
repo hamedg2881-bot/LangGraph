@@ -99,3 +99,19 @@ All admin routes require a separate ADMIN_API_KEY Bearer token. The key is store
 - Preserve existing models, containers, databases, services, and project data.
 - Never claim a change or test succeeded before its result is observed.
 - Keep source/configuration snapshots in this repository synchronized after each project change.
+
+
+## 2026-11-03 — Control Center and current host facts
+
+- Existing DGX Spark Control Center is retained; do not create a replacement dashboard.
+- systemd unit: `dgx-control-center.service`; verified active on 2026-11-03.
+- Published application: `/opt/ai/control-center/publish/ControlCenter.dll`; working directory: `/opt/ai/control-center/publish`.
+- Existing application: .NET 10 minimal API; host port 5090.
+- Verified `GET http://127.0.0.1:5090/api/health` returns status ok and application name DGX Spark Control Center.
+- Existing `/api/profiles` returns legacy `coding` and `image` profiles. Its model service entries still use `qwen-coder` and `qwen36-vl`, with old health URLs on ports 8010 and 8012.
+- Existing `/api/status` reads host resources, but its service health results for those legacy endpoints are not authoritative for the current Dynamo runtime.
+- Current Dynamo frontend host API is port 8013; current LangGraph Agent API is port 8100.
+- Verified host resource snapshot on 2026-11-03: 121.69 GiB total memory, 9.47 GiB available, 112.21 GiB used; do not load another large model based on this snapshot.
+- The Control Center must be evolved in place to consume LangGraph Registry and Dynamo runtime data. Preserve its existing UI, service, and operational behavior unless a reviewed change explicitly supersedes them.
+- User's intended model operation is sequential-capable: every approved model should be independently runnable through the central architecture, but simultaneous residency/execution of heavy models is NOT a requirement. The system should select the appropriate model per request and manage the selected worker's lifecycle/resources safely.
+- Keep the central architecture: Open WebUI → LangGraph Agent → Dynamo frontend/worker runtime. Open WebUI exposes Auto; LangGraph selects the model; Registry stores catalog/approval/capabilities; Dynamo handles inference/runtime.
