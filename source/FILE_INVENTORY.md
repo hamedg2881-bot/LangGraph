@@ -64,3 +64,13 @@ This inventory tracks project files created or changed on the DGX Spark host. Sn
 - Do not copy secret-bearing files or live data into GitHub.
 - A file marked pending must be fetched from the host before creating its source snapshot.
 - Update this inventory whenever a tracked project file is created, modified, or retired.
+
+
+## Existing Control Center
+
+| Host path | Purpose | Repository documentation |
+|---|---|---|
+| /opt/ai/control-center/publish/ControlCenter.dll | Existing .NET 10 Control Center published application | deployment/control-center.md (deployment facts; exact source snapshot pending retrieval) |
+| /etc/systemd/system/dgx-control-center.service | Control Center systemd unit | deployment/control-center.md (unit facts; exact unit snapshot pending retrieval) |
+
+The published DLL and systemd unit contents have not yet been retrieved. Do not invent source snapshots. Retrieve source files from the host before archiving implementation code. Do not commit secrets or publish output containing credentials.
