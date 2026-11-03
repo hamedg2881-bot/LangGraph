@@ -48,3 +48,14 @@
 27. Before implementation, inspect the Dynamo worker lifecycle/control APIs supported by the deployed version and validate whether workers can be started/stopped independently while sharing one frontend, etcd, and NATS.
 28. Do not implement Compose-based worker switching as the long-term manager. Compose remains deployment/bootstrap configuration; Model Manager should use a controlled worker lifecycle adapter.
 29. No worker lifecycle behavior or deployment has been changed by recording this design direction.
+
+
+## 2026-11-03 — Control Center and sequential model execution
+
+30. Reuse and extend the existing DGX Spark Control Center; do not create a parallel dashboard.
+31. The Control Center remains the administrative UI. It should consume LangGraph Registry for the catalog and Dynamo/LangGraph runtime APIs for live model status and lifecycle actions.
+32. Every registered model should be independently runnable through the shared architecture. Simultaneous execution or residency of large models is not a requirement.
+33. LangGraph selects the best eligible model for each request. Dynamo provides the model runtime; Registry records model metadata, capabilities, approval, and enablement.
+34. Keep Open WebUI limited to the logical Auto model.
+35. Existing Control Center profile definitions are legacy and currently refer to qwen-coder/qwen36-vl health URLs on ports 8010/8012. Do not treat those URLs as authoritative for the current Dynamo runtime on port 8013.
+36. Do not change the running Control Center or model workers until the existing source/UI and current APIs have been inspected and a focused change is approved.
