@@ -89,3 +89,15 @@ The published DLL and systemd unit contents have not yet been retrieved. Do not 
 The four source files above were fetched from the user's uploaded text snapshots under archive/control-center/source/ and copied byte-for-byte as UTF-8 text into source/control-center/. The original archive is retained as provenance; source/control-center/ is the canonical editable source snapshot going forward.
 
 The initial source snapshot was inspected and then updated in the canonical repository: Program.cs now exposes GET /api/ai-status and disables profile mutation with HTTP 410; index.html shows Agent/Dynamo status, removes profile-apply controls, and escapes dynamic service fields. ControlCenter.csproj and HistoryBackgroundService.cs remain unchanged. These repository edits have not yet been synchronized to the host, built, or deployed.
+
+
+## Agent Registry source files identified — 2026-11-03
+
+| Host path | Purpose | Repository snapshot |
+|---|---|---|
+| /opt/ai/langgraph-agent/app/api/admin_routes.py | Registry list, sync, approve/reject, update, enable/disable, per-model status routes | Pending exact source capture |
+| /opt/ai/langgraph-agent/app/api/admin_auth.py | Admin Bearer authentication | Pending exact source capture |
+| /opt/ai/langgraph-agent/app/api/schemas.py | Agent request/response Pydantic contracts | Pending exact source capture |
+| /opt/ai/langgraph-agent/app/registry/schema.sql | PostgreSQL Registry schema | Pending exact source capture |
+
+The host route inventory was supplied on 2026-11-03 and is recorded in `progress/current-status.md` and `deployment/control-center.md`. No exact source body has been fabricated or added to the source tree.
