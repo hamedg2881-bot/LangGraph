@@ -68,3 +68,5 @@ The General Assistant prompt requires live search for current/recent questions a
 `build_chat_graph` accepts an optional model object for isolated tests. When supplied, that object is bound to the same registered tools and used for graph invocation; in production, when no model object is supplied, the graph constructs the request-selected Dynamo model from `model_id`. This prevents tests from accidentally making live inference calls.
 
 `source/tests/test_chat_graph.py` exercises a complete structured tool cycle with a fake model and deterministic tool: model tool call → LangGraph ToolNode execution → ToolMessage returned to model → final assistant message. The test is committed but is not yet run against the DGX virtual environment. It does not establish compatibility with the live Qwen parser or SearXNG service.
+
+`source/tests/test_web_search.py` adds deterministic tests for result URL filtering/deduplication, max-result bounds, JSON request mode, and malformed provider responses. These tests have been committed but not executed in the deployed environment.
