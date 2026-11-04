@@ -13,9 +13,58 @@ router = APIRouter(
 )
 
 
+class ModelRegistration(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    display_name: str
+    provider: str = "nvidia-dynamo"
+    architecture: str | None = None
+    quantization: str | None = None
+    context_length: int | None = None
+    capabilities: list[str] = ["chat"]
+    notes: str | None = None
+
+
 class ModelDecision(BaseModel):
     model_config = ConfigDict(extra="forbid")
     notes: str | None = None
+
+
+
+@router.post("", status_code=201)
+async def register_model(payload: ModelRegistration, request: Request):
+    model_id = payload.id.strip()
+    display_name = payload.display_name.strip()
+    if not model_id or len(model_id) > 200 or not display_name or len(display_name) > 200:
+        raise HTTPException(status_code=422, detail="Invalid model id or display name")
+    if payload.context_length is not None and payload.context_length < 1:
+        raise HTTPException(status_code=422, detail="context_length must be positive")
+    try:
+        created = await request.app.state.registry.register_manual_model(
+            model_id=model_id,
+            display_name=display_name,
+            provider=payload.provider.strip(),
+            architecture=payload.architecture,
+            quantization=payload.quantization,
+            context_length=payload.context_length,
+            capabilities=payload.capabilities,
+            notes=payload.notes,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not created:
+        raise HTTPException(status_code=409, detail="Model already exists")
+    return {
+        "id": model_id,
+        "approval_status": "pending",
+        "is_enabled": False,
+        "registration_source": "manual",
+    }
+
+
+@router.get("/runtime/queue")
+async def runtime_queue(request: Request):
+    return await request.app.state.model_manager.snapshot()
 
 
 @router.get("")
