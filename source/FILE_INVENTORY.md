@@ -246,3 +246,5 @@ This is a product requirement and architecture/documentation change only. It doe
 |---|---|---|
 | source/tests/test_chat_graph.py | Deterministic async regression test: model emits a structured web_search tool call, ToolNode executes it, and the assistant receives ToolMessage before final response | Added to GitHub; not executed in the DGX virtual environment |
 | source/app/graph/chat.py | Uses the injected model argument when supplied, allowing deterministic graph tests without a live Dynamo call; production path continues creating the selected model by model_id | Updated in GitHub; not deployed |
+
+| source/tests/test_web_search.py | SearXNG tool regression tests for URL filtering/deduplication, result limits, JSON mode, and invalid response handling | Added to GitHub; not executed on DGX |
