@@ -126,6 +126,9 @@ app.MapGet("/api/registry/models", async (IHttpClientFactory factory) =>
     }
 });
 
+app.MapPost("/api/registry", async (JsonNode payload, IHttpClientFactory factory) =>
+    await ProxyRegistry(factory, HttpMethod.Post, "", payload));
+
 app.MapPost("/api/registry/sync", async (IHttpClientFactory factory) =>
     await ProxyRegistry(factory, HttpMethod.Post, "/sync", new JsonObject()));
 
