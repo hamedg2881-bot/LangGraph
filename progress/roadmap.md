@@ -184,3 +184,11 @@ Keep the existing central General Assistant architecture. Do not add a separate 
 - [ ] Run one bounded live Persian research request through Agent Auto and verify SearXNG results, structured tool calls, citations, and final answer.
 - [ ] Verify streaming requests preserve the same tool execution and final-response behavior.
 \n\n### Qwen XML tool-call compatibility — 2026-11-04\n- [x] Add a strict adapter for complete Qwen XML tool-call text returned in AIMessage.content.\n- [x] Allow only currently registered tool names and schema-declared parameters.\n- [x] Validate parsed arguments with the tool's Pydantic schema before converting to LangChain tool_calls.\n- [x] Keep LangGraph ToolNode as the only tool execution mechanism.\n- [x] Add parser and end-to-end graph regression tests, including multiple calls and malformed/untrusted markup.\n- [ ] Run syntax/import checks and focused tests in the DGX Agent virtual environment.\n- [ ] Synchronize the reviewed source to DGX and verify Persian web research through Auto after explicit deployment approval.\n
+
+### Streaming tool-call safety — 2026-11-04
+- [x] Replace raw message-chunk forwarding with completed LangGraph node updates.
+- [x] Emit only completed assistant text; ignore tool-node and structured tool-call updates.
+- [x] Prevent unparsed Qwen tool markup from reaching Open WebUI.
+- [x] Add regression coverage for final assistant output and tool-call suppression.
+- [ ] Run syntax/import checks and focused tests in the DGX Agent virtual environment.
+- [ ] After explicit deployment approval, verify a short web-search request through Open WebUI Auto: no XML leakage, actual ToolNode execution, final answer and measured latency.
