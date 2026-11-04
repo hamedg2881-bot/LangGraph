@@ -208,3 +208,16 @@ GitHub source only; host deployment remains pending explicit approval.
 | deployment/agent.env.example | Documents new non-secret settings and empty API-key placeholder | Updated |
 
 These are canonical GitHub source/configuration changes only. They have not been synchronized to the DGX host, installed, syntax-checked in the production virtual environment, or deployed. No production database, checkpointer data, Agent service, Dynamo worker, container, model, or Control Center runtime was changed.
+
+
+## Agent SearXNG integration — 2026-11-04 (GitHub only)
+
+| Repository path | Purpose | Status |
+|---|---|---|
+| source/app/tools/web.py | SearXNG JSON API live search tool | Replaced Tavily implementation; not deployed |
+| source/app/graph/chat.py | Registers SearXNG search tool in LangGraph ToolNode cycle | Updated; not deployed |
+| source/app/config/settings.py | SEARXNG_BASE_URL and search result limit | Updated; not deployed |
+| deployment/agent.env.example | Documents SearXNG endpoint; no API key | Updated |
+| architecture/tool-calling.md | SearXNG API, JSON-format prerequisite, and deployment checks | Updated |
+
+Host SearXNG is known to run as container `searxng`, published on `127.0.0.1:8888`/host port 8888. JSON output enablement and Agent-to-SearXNG reachability still require host verification. No host files, environment variables, containers, services, or databases were changed.
