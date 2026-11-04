@@ -47,6 +47,10 @@ class ModelManager:
         async with self.database.pool.connection() as connection:
             async with connection.transaction():
                 await connection.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                    (model_id,),
+                )
+                await connection.execute(
                     """
                     DELETE FROM model_runtime_leases
                     WHERE expires_at < NOW()
@@ -65,11 +69,12 @@ class ModelManager:
                     """
                     SELECT id
                     FROM model_runtime_requests
-                    WHERE state = 'queued'
+                    WHERE state = 'queued' AND model_id = %s
                     ORDER BY priority DESC, created_at, id
                     FOR UPDATE SKIP LOCKED
                     LIMIT 1
-                    """
+                    """,
+                    (model_id,),
                 )
                 first = await cursor.fetchone()
                 if first is None or str(first[0]) != request_id:
