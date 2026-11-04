@@ -214,3 +214,16 @@ This iteration deliberately exposes Registry reads only. It does not expose `/ad
 ### Build and deployment status
 
 All modernization edits are in GitHub only. The DGX host source, published DLL, environment, and running service have not been changed. Do not copy/publish/restart until explicit user approval. Before enabling Registry reads in production, provide `LANGGRAPH_ADMIN_API_KEY` to the service through a protected systemd environment/credential mechanism outside the repository; do not reuse or expose the Agent's entire `agent.env` file.
+
+
+## Control Center UI and Model Manager integration — 2026-11-04
+
+The Control Center source now includes:
+- Manual metadata-only Registry registration. Newly registered models remain Pending and are not downloaded or loaded.
+- A Model Manager page showing 24-hour request-state counts, queued requests, active leases by model, and expired-but-unreconciled lease count.
+- Safe cancellation for queued requests only, proxied server-to-server to the Agent. Running requests and leases cannot be cancelled from the panel.
+- Runtime lifecycle load/unload controls remain absent because the deployed bare-metal Dynamo Compose lifecycle adapter is not validated.
+- Correct green status styling for Dynamo model status `available`.
+- Resource charts refresh when their tab becomes visible, avoiding zero-width canvas rendering while hidden.
+
+The Control Center API adds read/proxy endpoints for `GET /admin/model-manager/status` and `POST /admin/model-manager/queue/{request_id}/cancel`. The Agent admin key remains server-side. These are source-only changes; no host files, environment variables, build, publish, or service restart were performed.
