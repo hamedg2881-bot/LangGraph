@@ -1,6 +1,6 @@
 from langchain_core.messages import SystemMessage
 from langchain_core.runnables import RunnableConfig
-from langgraph.graph import END, START, MessagesState, StateGraph
+from langgraph.graph import START, MessagesState, StateGraph
 from langgraph.prebuilt import ToolNode, tools_condition
 
 from app.config import get_settings
@@ -40,10 +40,10 @@ def build_chat_graph(checkpointer, model=None, settings=None):
 
     async def call_model(state: MessagesState, config: RunnableConfig):
         model_id = config.get("configurable", {}).get("model_id")
-        if not model_id:
+        if not model_id and model is None:
             raise RuntimeError("A selected model_id is required")
 
-        chat_model = create_chat_model(model_id).bind_tools(
+        chat_model = (model or create_chat_model(model_id)).bind_tools(
             tools,
             tool_choice="auto",
         )
@@ -61,7 +61,7 @@ def build_chat_graph(checkpointer, model=None, settings=None):
             *state["messages"],
         ]
 
-        response = await chat_model.ainvoke(messages)
+        response = await chat_model.ainvoke(messages, config=config)
         return {"messages": [response]}
 
     builder = StateGraph(MessagesState)
