@@ -7,6 +7,10 @@ class ModelQueueTimeout(Exception):
     pass
 
 
+class ModelQueueFull(Exception):
+    pass
+
+
 class ModelLease:
     def __init__(self, manager, request_id: str, model_id: str):
         self.manager = manager
@@ -19,11 +23,13 @@ class ModelManager:
         self,
         database,
         max_active_per_model: int = 1,
+        max_queue_size: int = 1000,
         lease_seconds: int = 90,
         poll_seconds: float = 0.5,
     ):
         self.database = database
         self.max_active_per_model = max(1, max_active_per_model)
+        self.max_queue_size = max(1, max_queue_size)
         self.lease_seconds = max(30, lease_seconds)
         self.poll_seconds = max(0.1, poll_seconds)
         self.owner = f"{socket.gethostname()}:{uuid.uuid4()}"
@@ -31,13 +37,29 @@ class ModelManager:
     async def enqueue(self, model_id: str, priority: int = 0) -> str:
         request_uuid = uuid.uuid4()
         async with self.database.pool.connection() as connection:
-            await connection.execute(
-                """
-                INSERT INTO model_runtime_requests (id, model_id, owner, priority)
-                VALUES (%s, %s, %s, %s)
-                """,
-                (request_uuid, model_id, self.owner, priority),
-            )
+            async with connection.transaction():
+                await connection.execute(
+                    "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
+                    (model_id,),
+                )
+                cursor = await connection.execute(
+                    """
+                    SELECT COUNT(*)
+                    FROM model_runtime_requests
+                    WHERE model_id = %s AND state = 'queued'
+                    """,
+                    (model_id,),
+                )
+                queued = (await cursor.fetchone())[0]
+                if queued >= self.max_queue_size:
+                    raise ModelQueueFull("Model request queue is full")
+                await connection.execute(
+                    """
+                    INSERT INTO model_runtime_requests (id, model_id, owner, priority)
+                    VALUES (%s, %s, %s, %s)
+                    """,
+                    (request_uuid, model_id, self.owner, priority),
+                )
         return str(request_uuid)
 
     async def _try_claim(self, request_id: str, model_id: str) -> bool:
