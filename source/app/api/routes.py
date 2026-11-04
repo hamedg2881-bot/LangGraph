@@ -143,6 +143,9 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
             except ModelQueueFull:
                 yield sse({"error": {"message": "Model request queue is full", "type": "rate_limit_error"}})
                 yield "data: [DONE]\n\n"
+            except ModelQueueTimeout:
+                yield sse({"error": {"message": "Timed out waiting for a model execution slot", "type": "service_unavailable"}})
+                yield "data: [DONE]\n\n"
             except Exception:
                 yield sse({
                     "error": {
