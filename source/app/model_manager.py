@@ -108,7 +108,7 @@ class ModelManager:
                         (request_id, model_id, owner, expires_at)
                     VALUES (%s, %s, %s, NOW() + (%s * INTERVAL '1 second'))
                     """,
-                    (request_id, model_id, self.owner, self.lease_seconds),
+                    (uuid.UUID(request_id), model_id, self.owner, self.lease_seconds),
                 )
                 return True
 
@@ -149,7 +149,7 @@ class ModelManager:
                     SET state = %s, finished_at = NOW(), error_code = %s
                     WHERE id = %s AND owner = %s AND state = 'running'
                     """,
-                    (state, error_code, request_id, self.owner),
+                    (state, error_code, uuid.UUID(request_id), self.owner),
                 )
 
 
@@ -175,7 +175,7 @@ class ModelManager:
                 WHERE id = %s AND owner = %s AND state = 'queued'
                 RETURNING id
                 """,
-                (request_id, self.owner),
+                (uuid.UUID(request_id), self.owner),
             )
             return await cursor.fetchone() is not None
 
