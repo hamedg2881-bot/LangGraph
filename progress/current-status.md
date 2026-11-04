@@ -218,3 +218,16 @@ Important limitations / gates:
 - No host files, database rows, services, containers, or model runtime state were changed by these GitHub commits.
 - Queue admission now has a configurable per-model pending-queue ceiling (`MODEL_MAX_QUEUE_SIZE`, default 1000); a full queue returns HTTP 429 for non-streaming requests and an SSE rate-limit error for streaming requests.
 - Admin cancellation now marks only queued requests; the waiting chat caller detects cancellation promptly. Running inference remains untouched. This behavior is source-committed but not yet integration-tested.
+
+
+## 2026-11-04 — Model Manager safety correction (GitHub only)
+
+- Added explicit Python package initializers. app.config exports Settings/get_settings; app.graph exports build_chat_graph, matching imports in app/main.py.
+- Reworked Model Manager admission so expired lease timestamps never release execution capacity. Admission counts every retained lease and also counts orphaned running rows that have no lease; an expired lease is reported as unreconciled rather than reclaimed.
+- A successful graph execution marks the request completed and releases its lease in one PostgreSQL transaction. If the request coroutine fails or is cancelled, the request moves to reconciliation_required and its lease remains held. This is intentionally fail-closed because API cancellation, client disconnect, or a transport error does not prove remote Dynamo inference stopped.
+- Heartbeat database errors now trigger bounded exponential retry while the invocation coroutine remains alive. Lease expiry is telemetry, not permission to admit another request.
+- Queue claiming now uses the per-model advisory transaction lock with a blocking row lock, avoiding SKIP LOCKED overtaking the oldest eligible request under contention.
+- Added the reconciliation_required request state through an idempotent schema constraint update. Streaming queue timeouts now return a specific SSE service_unavailable error rather than the generic streaming failure.
+- Important operational limitation: no automatic reconciliation/release endpoint has been added. A retained lease can keep a model's admission slot blocked until runtime termination is independently verified and a controlled reconciliation procedure is implemented. Do not manually delete leases merely because their timestamp expired.
+- GitHub source only. No host files, PostgreSQL schema/data, Agent service, Dynamo worker, container, or model was changed. No deployment/restart was performed.
+- Verification so far is source review and GitHub read-back only. Python syntax/import checks, schema migration against a disposable PostgreSQL database, queue concurrency tests, cancellation/disconnect tests, and Dynamo cancellation behavior remain required before deployment.
