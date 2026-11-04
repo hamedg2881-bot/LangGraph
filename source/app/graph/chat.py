@@ -93,6 +93,7 @@ def build_chat_graph(checkpointer, model=None, settings=None):
         ]
 
         response = await chat_model.ainvoke(messages, config=config)
+        response = parse_qwen_tool_calls(response, tools)
         return {"messages": [response]}
 
     builder = StateGraph(MessagesState)
