@@ -170,3 +170,5 @@ Keep the existing central General Assistant architecture. Do not add a separate 
 - [ ] Execute the regression test in the DGX Agent virtual environment and resolve any dependency/API mismatch.
 - [ ] Validate actual Qwen3.8-VL structured tool calls through Dynamo's configured parser.
 - [ ] Run end-to-end Persian SearXNG research after explicit deployment approval.
+- [x] Add deterministic SearXNG response validation and URL-filtering regression tests.
+- [ ] Execute graph and SearXNG tests in the DGX Agent virtual environment.
