@@ -135,3 +135,4 @@ Remaining before deployment:
 5. Implement resource admission, load operations, drain-first eviction, desired/observed worker state, and GPU memory telemetry only after validation.
 6. Design authenticated Control Center admin sessions before exposing any Registry mutation or Model Manager actions in the browser.
 7. After source review and explicit user approval, synchronize files, apply additive schema via controlled Agent startup, and verify health/API behavior. No deployment is authorized by these GitHub commits.
+- Queue backpressure has a configurable per-model queued-request ceiling (default 1000). Validate the chosen limit and HTTP/SSE behavior in load tests before production deployment.
