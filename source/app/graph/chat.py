@@ -8,7 +8,8 @@ from langgraph.prebuilt import ToolNode, tools_condition
 from app.config import get_settings
 from app.providers.dynamo import create_chat_model
 from app.tools.web import build_web_tools
-from app.tools.web_intent import is_web_research_request, message_text\nfrom app.tools.qwen_tool_calls import parse_qwen_tool_calls
+from app.tools.web_intent import is_web_research_request, message_text
+from app.tools.qwen_tool_calls import parse_qwen_tool_calls
 
 
 BASE_SYSTEM_PROMPT = """You are the General Assistant for this deployment.
