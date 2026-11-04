@@ -7,7 +7,7 @@ from langchain_core.tools import StructuredTool
 from langgraph.checkpoint.memory import MemorySaver
 
 from app.graph.chat import build_chat_graph
-from app.tools.web_intent import is_web_research_request\nfrom app.tools.qwen_tool_calls import parse_qwen_tool_calls
+from app.tools.web_intent import is_web_research_request\nfrom app.tools.qwen_tool_calls import parse_qwen_tool_calls\nfrom app.tools.web import WebSearchArgs
 
 
 def _fake_search_tool():
@@ -163,7 +163,12 @@ class QwenToolCallParsingTests(unittest.TestCase):
                 self.assertIs(parse_qwen_tool_calls(message, [tool]), message)
 
     def test_rejects_arguments_that_fail_tool_schema_validation(self):
-        tool = _fake_search_tool()
+        tool = StructuredTool.from_function(
+            lambda query, max_results=5: query,
+            name="web_search",
+            description="Schema validation test",
+            args_schema=WebSearchArgs,
+        )
         message = AIMessage(
             content=(
                 "<tool_call><function=web_search>"
