@@ -248,3 +248,14 @@ This is a product requirement and architecture/documentation change only. It doe
 | source/app/graph/chat.py | Uses the injected model argument when supplied, allowing deterministic graph tests without a live Dynamo call; production path continues creating the selected model by model_id | Updated in GitHub; not deployed |
 
 | source/tests/test_web_search.py | SearXNG tool regression tests for URL filtering/deduplication, result limits, JSON mode, and invalid response handling | Added to GitHub; not executed on DGX |
+
+## Deterministic General Assistant web routing — 2026-11-04
+
+| Repository path | Purpose | Status |
+|---|---|---|
+| source/app/tools/web_intent.py | Persian/English web-research intent detection and extraction of text from multimodal message content | Added; GitHub only |
+| source/app/graph/chat.py | Required structured tool call for first assistant response to a research turn; auto tool choice after ToolMessage; runtime date context | Updated; GitHub only |
+| source/app/providers/dynamo.py | Per-request Qwen thinking override; research turns can disable thinking without changing normal-chat defaults | Updated; GitHub only |
+| source/tests/test_chat_graph.py | Regression tests for intent detection, forced research routing, normal chat, ToolNode cycle, and date context | Updated; not run on DGX |
+
+No host source, Agent service, Dynamo worker, model, database, or environment file was changed. Host synchronization and test execution remain pending explicit user approval.
