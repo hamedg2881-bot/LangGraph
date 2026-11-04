@@ -323,7 +323,7 @@ async def unload_model_not_supported(model_id: str):
 
 @model_manager_router.post("/queue/{request_id}/cancel")
 async def cancel_queued_request(request_id: str, request: Request):
-    cancelled = await request.app.state.model_manager.cancel_queued(request_id)
+    cancelled = await request.app.state.model_manager.cancel_request(request_id)
     if not cancelled:
         raise HTTPException(
             status_code=409,
