@@ -283,3 +283,12 @@ The user explicitly confirmed that the Agent must be very complete and versatile
 - Model Manager's established safety rules remain binding: queue when resources are occupied and never forcibly interrupt active inference.
 - No new host deployment, service restart, model activation, or database change was authorized by this product-direction statement.
 - Detailed acceptance criteria: `architecture/assistant-quality.md`.
+
+
+## 2026-11-04 — General Assistant tool orchestration hardening (GitHub only)
+
+- Improved the General Assistant system contract: task completion, same-language responses, Persian RTL, safe defaults, multi-step execution, truthful action reporting, and explicit tool-failure handling.
+- Strengthened live-search policy for current/recent questions and explicit research requests. The assistant must distinguish successful searches (`ok: true`) from errors/empty results and may cite only returned URLs.
+- Hardened SearXNG result handling: bounded timeouts, explicit timeout/HTTP/service/invalid-response errors, response-shape validation, HTTP(S)-only links, URL deduplication, bounded snippets, and result counts.
+- Kept LangGraph structured tool dispatch (`bind_tools` → conditional ToolNode → assistant) and enabled ToolNode error conversion so tool exceptions can be handled by the assistant rather than silently presented as success.
+- Changes are committed to GitHub only. No DGX source, environment, SearXNG settings/container, Agent service, database, Dynamo worker, or model was changed. Syntax/import, structured tool-call parsing, and end-to-end Persian web research remain unverified until an approved deployment/test.
