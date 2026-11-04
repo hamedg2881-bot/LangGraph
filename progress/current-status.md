@@ -217,3 +217,4 @@ Important limitations / gates:
 - Control Center Registry mutation UI remains unavailable because it has no administrator session authentication. Do not expose manual registration or mutations through anonymous browser routes.
 - No host files, database rows, services, containers, or model runtime state were changed by these GitHub commits.
 - Queue admission now has a configurable per-model pending-queue ceiling (`MODEL_MAX_QUEUE_SIZE`, default 1000); a full queue returns HTTP 429 for non-streaming requests and an SSE rate-limit error for streaming requests.
+- Admin cancellation now marks only queued requests; the waiting chat caller detects cancellation promptly. Running inference remains untouched. This behavior is source-committed but not yet integration-tested.
