@@ -7,7 +7,7 @@ from fastapi.responses import StreamingResponse
 
 from app.api.schemas import ChatCompletionRequest, ModelList, ModelObject
 from app.model_selector import ModelSelectionError, select_model
-from app.model_manager import ModelQueueTimeout
+from app.model_manager import ModelQueueFull, ModelQueueTimeout
 
 router = APIRouter(prefix="/v1")
 
@@ -137,6 +137,9 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
 
                 yield "data: [DONE]\n\n"
 
+            except ModelQueueFull:
+                yield sse({"error": {"message": "Model request queue is full", "type": "rate_limit_error"}})
+                yield "data: [DONE]\\n\\n"
             except Exception:
                 yield sse({
                     "error": {
@@ -189,6 +192,8 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
             },
         }
 
+    except ModelQueueFull as exc:
+        raise HTTPException(status_code=429, detail=str(exc)) from exc
     except ModelQueueTimeout as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
