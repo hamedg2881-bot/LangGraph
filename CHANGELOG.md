@@ -199,3 +199,11 @@
 - Updated tool-calling architecture, current status, roadmap, and source inventory.
 - All changes are committed to GitHub only. No source was synchronized to DGX, no tests were run on the host, and no service, worker, model, database, checkpointer, or environment configuration was changed.
 \n\n## 2026-11-04 — Qwen XML tool-call compatibility adapter (GitHub only)\n\n- Added `source/app/tools/qwen_tool_calls.py` to convert complete Qwen XML tool-call markup into standard LangChain tool calls when the backend returns markup as assistant text.\n- Restricted dispatch to tools registered in the current graph; reject unknown tools, unknown or duplicate parameters, malformed/incomplete blocks, mixed prose, and arguments that fail the registered Pydantic schema.\n- Integrated normalization immediately after model inference; the existing LangGraph conditional edge and ToolNode remain the only tool execution path.\n- Added unit tests for single/multiple calls, HTML entity decoding, invalid markup and schema rejection, plus a graph-level test that exercises a second-turn XML call through ToolNode.\n- Updated tool-calling architecture, current status, roadmap, and source inventory.\n- GitHub source/documentation only. Tests have not been run on DGX; no host source, Agent service, worker, container, model, database, checkpointer, or environment was changed or restarted.\n
+
+## 2026-11-04 — Streaming tool-call XML leakage fix (GitHub only)
+
+- Changed the OpenAI-compatible streaming route to consume LangGraph completed node updates rather than forwarding raw message chunks.
+- Added a narrow output filter so only completed assistant text reaches Open WebUI; structured tool-call messages and unparsed Qwen tool markup are suppressed.
+- Added regression tests for assistant text emission, non-assistant node filtering, and structured tool-call suppression.
+- The change prevents internal tool markup from appearing in the UI. It does not claim to improve model inference latency; current graph model calls use ainvoke, so final text may be emitted after a node completes.
+- GitHub-only changes. Not yet synchronized to DGX, tested in the host virtual environment, or deployed. No service, worker, container, model, database, checkpoint, or environment configuration was changed.
