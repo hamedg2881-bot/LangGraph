@@ -11,6 +11,7 @@ from app.config import get_settings
 from app.graph import build_chat_graph
 from app.registry.database import RegistryDatabase
 from app.registry.repository import ModelRegistryRepository
+from app.model_manager import ModelManager
 
 
 @asynccontextmanager
@@ -38,6 +39,10 @@ async def lifespan(app: FastAPI):
             app.state.graph = build_chat_graph(checkpointer=checkpointer)
             app.state.registry_database = registry_database
             app.state.registry = ModelRegistryRepository(registry_database)
+            app.state.model_manager = ModelManager(
+                registry_database,
+                max_active_per_model=settings.model_max_active_per_model,
+            )
             yield
         finally:
             await registry_database.close()
