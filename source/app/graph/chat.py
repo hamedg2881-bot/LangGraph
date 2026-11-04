@@ -18,11 +18,10 @@ When using web sources, cite the actual returned URLs as Markdown links. Never i
 Do not ask a follow-up question when a reasonable default allows you to complete the task; state your assumption and proceed.
 """
 
-WEB_TOOLS_PROMPT = """Live web tools are available: web_search and web_extract.
+WEB_TOOLS_PROMPT = """Live web search is available through SearXNG using the web_search tool.
 For current, recent, weekly, trending, price, schedule, or otherwise time-sensitive questions, use web_search before answering.
-Use web_extract when a result needs fuller verification or context.
 Base factual claims on returned results, compare sources when appropriate, and include source links in the final answer.
-If search returns no useful evidence, say so clearly; do not substitute guessed results.
+If search returns no useful evidence or the SearXNG service fails, say so clearly; do not substitute guessed results.
 """
 
 NO_WEB_TOOLS_PROMPT = """Live web search is not configured in this deployment.
@@ -34,15 +33,10 @@ Never print pseudo-code or imaginary tool calls as if they were executed.
 
 def build_chat_graph(checkpointer, model=None, settings=None):
     runtime_settings = settings or get_settings()
-    api_key = (
-        runtime_settings.tavily_api_key.get_secret_value()
-        if runtime_settings.tavily_api_key
-        else None
-    )
     tools = build_web_tools(
-        api_key=api_key,
+        base_url=runtime_settings.searxng_base_url,
         max_results=runtime_settings.web_search_max_results,
-    ) if api_key else []
+    )
     system_prompt = BASE_SYSTEM_PROMPT + (
         WEB_TOOLS_PROMPT if tools else NO_WEB_TOOLS_PROMPT
     )
