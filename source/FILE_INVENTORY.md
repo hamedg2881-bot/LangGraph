@@ -162,3 +162,4 @@ The live `config/agent.env` was not read, copied, or committed. These snapshots 
 | source/app/api/routes.py | Streaming and non-streaming inference protected by request leases | Committed; not deployed |
 
 The queue/lease source is a first implementation checkpoint, not a production-validated Model Manager. Syntax/import checks, PostgreSQL integration tests, concurrency and streaming-disconnect tests, resource-aware admission, Dynamo lifecycle control, GPU memory monitoring, and authenticated Control Center administration remain outstanding. No host source or runtime was changed.
+The queue implementation also enforces configurable per-model queue backpressure (`MODEL_MAX_QUEUE_SIZE`, default 1000). This behavior is committed but has not been runtime-tested.
