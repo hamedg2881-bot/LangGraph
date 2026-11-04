@@ -2,12 +2,12 @@ import re
 
 
 _ENGLISH_WEB_PATTERNS = (
-    r"\b(search|browse|look\s+up|find\s+online|web\s+search|internet)\b",
+    r"\b(search|browse|look\s+up|find\s+online|web\s+search|internet|research|investigate)\b",
     r"\b(latest|newest|recent|today|yesterday|this\s+week|past\s+week|last\s+week)\b",
     r"\b(news|headlines|current\s+(?:events|facts|price|prices|schedule))\b",
 )
 _PERSIAN_WEB_PATTERNS = (
-    r"(جست.?وجو|جستجو|بگرد|پیدا\s*کن|در\s*وب|در\s*اینترنت|وب\s*گردی)",
+    r"(جست.?وجو|جستجو|بگرد|پیدا\s*کن|تحقیق|در\s*وب|در\s*اینترنت|وب\s*گردی)",
     r"(آخرین|جدیدترین|به.?روز|امروز|دیروز|هفته\s*اخیر|هفته\s*گذشته|روزهای\s*اخیر)",
     r"(خبر|اخبار|قیمت|نرخ|وضعیت\s*فعلی|رویدادهای\s*جاری)",
 )
