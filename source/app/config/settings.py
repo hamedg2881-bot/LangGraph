@@ -34,6 +34,7 @@ class Settings(BaseSettings):
 
     model_max_active_per_model: int = Field(default=8, ge=1, le=128)
     model_queue_timeout: int = Field(default=600, gt=0, le=7200)
+    model_max_queue_size: int = Field(default=1000, ge=1, le=100000)
 
 
 @lru_cache(maxsize=1)
