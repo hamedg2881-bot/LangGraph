@@ -135,6 +135,21 @@ app.MapGet("/api/registry/models", async (IHttpClientFactory factory) =>
     }
 });
 
+app.MapPost("/api/registry/sync", async (IHttpClientFactory factory) =>
+    await ProxyRegistry(factory, HttpMethod.Post, "/sync", new JsonObject()));
+
+app.MapPost("/api/registry/{id}/{action}", async (string id, string action, IHttpClientFactory factory) =>
+{
+    var allowed = new[] { "approve", "reject", "enable", "disable" };
+    if (!allowed.Contains(action, StringComparer.Ordinal))
+        return Results.BadRequest(new { detail = "Unsupported Registry action." });
+    return await ProxyRegistry(factory, HttpMethod.Post,
+        $"/{Uri.EscapeDataString(id)}/{action}", new JsonObject());
+});
+
+app.MapPatch("/api/registry/{id}", async (string id, JsonNode payload, IHttpClientFactory factory) =>
+    await ProxyRegistry(factory, HttpMethod.Patch, $"/{Uri.EscapeDataString(id)}", payload));
+
 app.MapGet("/api/history", (int? hours) =>
 {
     var requestedHours = Math.Clamp(hours ?? 24, 1, 720);
@@ -322,3 +337,36 @@ static (int exitCode, string stdout) awaitRunNvidia()
 
 static double? ParseDouble(string value) =>
     double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : null;
+
+static async Task<IResult> ProxyRegistry(
+    IHttpClientFactory factory, HttpMethod method, string path, JsonNode? payload)
+{
+    var key = Environment.GetEnvironmentVariable("LANGGRAPH_ADMIN_API_KEY");
+    if (string.IsNullOrWhiteSpace(key))
+        return Results.Problem(title: "Registry integration is not configured",
+            detail: "The server-side Agent Registry credential is missing.",
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+
+    var client = factory.CreateClient("platform");
+    using var request = new HttpRequestMessage(method,
+        $"{BaseUrl("LANGGRAPH_AGENT_URL", "http://127.0.0.1:8100")}/admin/models{path}");
+    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+    if (payload is not null)
+        request.Content = new StringContent(payload.ToJsonString(), System.Text.Encoding.UTF8, "application/json");
+
+    try
+    {
+        using var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+        return Results.Content(body, response.Content.Headers.ContentType?.ToString() ?? "application/json",
+            System.Text.Encoding.UTF8, (int)response.StatusCode);
+    }
+    catch (TaskCanceledException)
+    {
+        return Results.Problem(title: "Registry timeout", statusCode: StatusCodes.Status504GatewayTimeout);
+    }
+    catch
+    {
+        return Results.Problem(title: "Registry unavailable", statusCode: StatusCodes.Status502BadGateway);
+    }
+}
