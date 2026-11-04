@@ -269,3 +269,17 @@ Deployment gates:
 - SearXNG JSON output must be enabled in its settings (`search.formats` includes `json`). This has not yet been checked on the host.
 - All changes are GitHub-only. No Agent environment, host source, SearXNG configuration, container, service, or database was changed or restarted.
 - Runtime verification of SearXNG JSON output, Agent tool execution, Dynamo tool-call parsing, and end-to-end Persian search remains pending.
+
+
+## 2026-11-04 — Product direction: high-quality all-purpose General Assistant
+
+The user explicitly confirmed that the Agent must be very complete and versatile, with a high-quality chat experience. This is the primary product requirement and must guide future architecture, implementation, prioritization, and acceptance.
+
+- One central General Assistant remains the user-facing orchestrator; Open WebUI exposes only logical `Auto`.
+- The assistant should internally select approved models and tools based on intent, capability, task complexity, and resource availability.
+- Required experience includes strong general conversation/reasoning, coherent long-term conversation continuity, real web research through SearXNG, vision, document/file analysis, coding/workspace tasks, and image-generation workflows.
+- Persian RTL and multilingual conversations are first-class requirements.
+- Quality includes task completion, accuracy, context retention, grounded tool use, natural responses, graceful failures, privacy, and safety—not just model speed or service health.
+- Model Manager's established safety rules remain binding: queue when resources are occupied and never forcibly interrupt active inference.
+- No new host deployment, service restart, model activation, or database change was authorized by this product-direction statement.
+- Detailed acceptance criteria: `architecture/assistant-quality.md`.
