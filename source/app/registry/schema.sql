@@ -43,7 +43,7 @@ CREATE TABLE IF NOT EXISTS model_runtime_requests (
     id UUID PRIMARY KEY,
     model_id TEXT NOT NULL REFERENCES model_registry_models(id) ON DELETE RESTRICT,
     state TEXT NOT NULL DEFAULT 'queued'
-        CHECK (state IN ('queued', 'running', 'completed', 'failed', 'cancelled')),
+        CHECK (state IN ('queued', 'running', 'completed', 'failed', 'cancelled', 'reconciliation_required')),
     priority INTEGER NOT NULL DEFAULT 0,
     owner TEXT NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -69,3 +69,11 @@ CREATE TABLE IF NOT EXISTS model_runtime_leases (
 
 CREATE INDEX IF NOT EXISTS idx_model_runtime_leases_model_expiry
     ON model_runtime_leases (model_id, expires_at);
+
+
+ALTER TABLE model_runtime_requests
+    DROP CONSTRAINT IF EXISTS model_runtime_requests_state_check;
+
+ALTER TABLE model_runtime_requests
+    ADD CONSTRAINT model_runtime_requests_state_check
+    CHECK (state IN ('queued', 'running', 'completed', 'failed', 'cancelled', 'reconciliation_required'));
