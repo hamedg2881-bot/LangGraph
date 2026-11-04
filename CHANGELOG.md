@@ -188,3 +188,13 @@
 - GitHub-only source/test change. Test execution and runtime Qwen/Dynamo tool-parser compatibility remain pending; no host deployment or service restart was performed.
 
 - Added deterministic SearXNG tool tests covering invalid/duplicate URL filtering, result bounds, JSON format, and malformed response handling. Tests are committed but not run in the production virtual environment.
+
+## 2026-11-04 — Deterministic General Assistant web research routing (GitHub only)
+
+- Added Persian/English research-intent detection so explicit web research and current-information requests do not depend solely on the model choosing a tool under `auto`.
+- Forced a structured web tool call on the first assistant response to a research turn; subsequent assistant calls return to `auto` after receiving a ToolMessage.
+- Added a per-request thinking override and disabled Qwen thinking only for research turns, based on observed Dynamo behavior. Normal chat keeps its configured thinking setting.
+- Added server-local runtime date/time to the system prompt to prevent fabricated dates.
+- Expanded graph tests for intent detection, routing mode transitions, ToolNode execution, and date context.
+- Updated tool-calling architecture, current status, roadmap, and source inventory.
+- All changes are committed to GitHub only. No source was synchronized to DGX, no tests were run on the host, and no service, worker, model, database, checkpointer, or environment configuration was changed.
