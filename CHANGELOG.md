@@ -150,3 +150,11 @@
 - Replaced FOR UPDATE SKIP LOCKED with a row lock under the per-model advisory lock to preserve queue ordering.
 - Added an SSE-specific queue-timeout error.
 - Source changes are committed to GitHub only. No host, database, service, worker, or model state was modified. Deployment remains blocked on syntax/import validation, PostgreSQL migration tests, concurrency/stream cancellation tests, and a safe runtime reconciliation procedure.
+
+
+## 2026-11-04 — Model Manager cancellation ownership fix (GitHub only)
+
+- A PostgreSQL integration test with two independent ModelManager instances demonstrated that the original cancel_request() could cancel another manager's queued request because its UPDATE lacked an owner predicate.
+- Updated cancel_request() to require both request ID and the calling manager's owner, matching the ownership boundary already enforced by cancel_queued().
+- The cross-manager cancellation test exposed the issue on the disposable langgraph_migration_test database. Its finally cleanup removed the test request and model; no production database or service was touched.
+- The source fix is committed to GitHub only. It has not yet been fetched into the review workspace, regression-tested, synchronized to the host, or deployed.
