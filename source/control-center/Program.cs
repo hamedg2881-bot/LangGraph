@@ -31,25 +31,16 @@ app.MapGet("/api/status", async (IHttpClientFactory factory) =>
     var dynamoHealth = await CheckEndpoint(client, $"{dynamoBase}/health");
     var dynamoModels = await GetJson(client, $"{dynamoBase}/v1/models") ?? await GetJson(client, $"{dynamoBase}/models");
 
-    var containers = new[]
-    {
-        new { name = "dynamo-vllm-vision38", title = "Qwen Vision Worker", role = "worker" },
-        new { name = "dynamo-frontend", title = "Dynamo Frontend", role = "gateway" },
-        new { name = "dynamo-etcd", title = "Dynamo Etcd", role = "dependency" },
-        new { name = "dynamo-nats", title = "Dynamo NATS", role = "dependency" },
-        new { name = "langgraph-postgres", title = "PostgreSQL", role = "database" },
-        new { name = "open-webui", title = "Open WebUI", role = "ui" }
-    };
-
+    var containerNames = await DiscoverContainers();
     var runtime = new List<object>();
-    foreach (var container in containers)
+    foreach (var name in containerNames)
     {
-        var state = await ReadContainerStatus(container.name);
+        var state = await ReadContainerStatus(name);
         runtime.Add(new
         {
-            id = container.name,
-            name = container.title,
-            role = container.role,
+            id = name,
+            name,
+            role = ClassifyContainer(name),
             runtimeStatus = state,
             readiness = state == "running" ? "running" : state == "unknown" ? "unknown" : "stopped"
         });
@@ -202,6 +193,34 @@ static async Task<(string status, int? httpCode)> CheckEndpoint(HttpClient clien
     }
     catch (TaskCanceledException) { return ("timeout", null); }
     catch { return ("unreachable", null); }
+}
+
+static async Task<List<string>> DiscoverContainers()
+{
+    var configured = Environment.GetEnvironmentVariable("CONTROL_CENTER_CONTAINERS");
+    if (!string.IsNullOrWhiteSpace(configured))
+        return configured.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Distinct(StringComparer.Ordinal).ToList();
+
+    var result = await RunCommand("docker", new[] { "ps", "-a", "--format", "{{.Names}}" });
+    if (result.exitCode != 0) return new();
+    return result.stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        .Where(name => name.StartsWith("dynamo-", StringComparison.OrdinalIgnoreCase)
+            || name.StartsWith("langgraph-", StringComparison.OrdinalIgnoreCase)
+            || name.Equals("open-webui", StringComparison.OrdinalIgnoreCase))
+        .Distinct(StringComparer.Ordinal).OrderBy(name => name).ToList();
+}
+
+static string ClassifyContainer(string name)
+{
+    var value = name.ToLowerInvariant();
+    if (value.Contains("vllm") || value.Contains("worker") || value.Contains("vision")) return "worker";
+    if (value.Contains("frontend") || value.Contains("gateway")) return "gateway";
+    if (value.Contains("etcd") || value.Contains("nats")) return "dependency";
+    if (value.Contains("postgres")) return "database";
+    if (value.Contains("webui")) return "ui";
+    if (value.Contains("agent")) return "agent";
+    return "runtime";
 }
 
 static async Task<string> ReadContainerStatus(string name)
