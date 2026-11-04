@@ -32,6 +32,9 @@ class Settings(BaseSettings):
 
     langgraph_checkpoint_enabled: bool = True
 
+    model_max_active_per_model: int = Field(default=8, ge=1, le=128)
+    model_queue_timeout: int = Field(default=600, gt=0, le=7200)
+
 
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
