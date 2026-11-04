@@ -36,7 +36,10 @@ async def lifespan(app: FastAPI):
             await registry_database.open()
             app.state.settings = settings
             app.state.checkpointer = checkpointer
-            app.state.graph = build_chat_graph(checkpointer=checkpointer)
+            app.state.graph = build_chat_graph(
+                checkpointer=checkpointer,
+                settings=settings,
+            )
             app.state.registry_database = registry_database
             app.state.registry = ModelRegistryRepository(registry_database)
             app.state.model_manager = ModelManager(
