@@ -238,3 +238,38 @@ class ChatGraphQwenXmlCompatibilityTests(unittest.IsolatedAsyncioTestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class StreamingUpdateTests(unittest.TestCase):
+    def test_emits_completed_assistant_text_and_ignores_other_nodes(self):
+        from app.api.routes import _assistant_text_from_update
+
+        self.assertEqual(
+            _assistant_text_from_update({
+                "assistant": {"messages": [AIMessage(content="پاسخ نهایی")]}
+            }),
+            ["پاسخ نهایی"],
+        )
+        self.assertEqual(
+            _assistant_text_from_update({
+                "tools": {"messages": [AIMessage(content="internal result")]}
+            }),
+            [],
+        )
+
+    def test_skips_tool_call_messages(self):
+        from app.api.routes import _assistant_text_from_update
+
+        message = AIMessage(
+            content="",
+            tool_calls=[{
+                "name": "web_search",
+                "args": {"query": "latest news"},
+                "id": "call-stream-test",
+                "type": "tool_call",
+            }],
+        )
+        self.assertEqual(
+            _assistant_text_from_update({"assistant": {"messages": [message]}}),
+            [],
+        )
