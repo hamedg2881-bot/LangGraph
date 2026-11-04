@@ -125,3 +125,15 @@
 - Recorded the Control Center admin-authentication requirement before exposing mutating endpoints.
 - Updated decisions, current status, roadmap, README, and source inventory.
 - Documentation-only GitHub update. No host source, database, services, containers, models, or runtime configuration were changed. No secrets were committed.
+
+
+## 2026-11-04 — Agent Model Manager and manual Registry source implementation (GitHub only)
+
+- Captured the exact host versions of Agent settings, Dynamo provider, and Registry schema into the canonical source tree; no secrets or `agent.env` content was accessed.
+- Added manual metadata-only Registry registration with pending approval and disabled state by default.
+- Added additive PostgreSQL queue/request and renewable lease tables.
+- Added durable per-model FIFO admission, lease heartbeat/recovery, queue timeout, completion/failure/cancellation tracking, and queue snapshots.
+- Integrated request leases around non-streaming and streaming graph inference; running requests are never forcibly cancelled.
+- Added authenticated Model Manager status/queue/cancel endpoints. Load/unload endpoints explicitly return HTTP 501 until a supported graceful Dynamo 1.6.1 Compose lifecycle mechanism is validated.
+- Updated source inventory, current status, and roadmap.
+- All changes are committed to GitHub only. They have not been compiled, tested against the host database, deployed, or restarted. No host or runtime state was changed.
