@@ -67,3 +67,8 @@ The target is a catalog of multiple approved models with resource-aware residenc
 - Do not expose a separate host-facing frontend port for each model worker.
 - Compose is bootstrap/deployment configuration, not the permanent model scheduler. A lifecycle adapter must be validated against the deployed Dynamo version before automation.
 
+
+
+## General Assistant product objective
+
+The Agent is intended to be a high-quality, all-purpose assistant, not merely a thin proxy to a model. It must understand intent, preserve conversation context, route internally to approved capabilities, execute real tools, and return reliable natural responses. Open WebUI continues to expose only `Auto`; users should not need to select workers or tools. Persian RTL and multilingual use are first-class requirements. The detailed product acceptance contract is maintained in [General Assistant quality requirements](assistant-quality.md).
