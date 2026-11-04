@@ -230,3 +230,11 @@ Host SearXNG is known to run as container `searxng`, published on `127.0.0.1:888
 | architecture/assistant-quality.md | Product objective, quality dimensions, implementation principles, and end-to-end acceptance standard for the all-purpose General Assistant | Added; governing design/acceptance document |
 
 This is a product requirement and architecture/documentation change only. It does not claim that all listed capabilities are implemented or deployed.
+
+
+## General Assistant web orchestration update — 2026-11-04
+
+| Repository path | Purpose | Host status |
+|---|---|---|
+| source/app/tools/web.py | SearXNG JSON search tool with timeout/error classification, response validation, HTTP(S)-only URL filtering, and duplicate removal | Updated in GitHub only; not synchronized or tested on DGX |
+| source/app/graph/chat.py | General Assistant system behavior, explicit live-search policy, ToolNode execution and tool-error handling | Updated in GitHub only; not synchronized or tested on DGX |
