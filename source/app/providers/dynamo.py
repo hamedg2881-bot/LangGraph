@@ -3,8 +3,12 @@ from langchain_openai import ChatOpenAI
 from app.config import get_settings
 
 
-def create_chat_model(model: str | None = None) -> ChatOpenAI:
+def create_chat_model(
+    model: str | None = None,
+    enable_thinking: bool | None = None,
+) -> ChatOpenAI:
     settings = get_settings()
+    thinking = settings.enable_thinking if enable_thinking is None else enable_thinking
 
     return ChatOpenAI(
         model=model or settings.default_model,
@@ -15,7 +19,7 @@ def create_chat_model(model: str | None = None) -> ChatOpenAI:
         max_retries=2,
         extra_body={
             "chat_template_kwargs": {
-                "enable_thinking": settings.enable_thinking,
+                "enable_thinking": thinking,
             }
         },
     )
