@@ -5,6 +5,64 @@ class ModelRegistryRepository:
     def __init__(self, database):
         self.database = database
 
+
+    async def register_manual_model(
+        self,
+        model_id: str,
+        display_name: str,
+        provider: str,
+        architecture: str | None,
+        quantization: str | None,
+        context_length: int | None,
+        capabilities: list[str],
+        notes: str | None = None,
+    ):
+        allowed = {"chat", "vision", "reasoning", "coding", "tool_calling"}
+        normalized = set(capabilities)
+        if not normalized.issubset(allowed):
+            raise ValueError("Unsupported model capability")
+
+        async with self.database.pool.connection() as connection:
+            async with connection.transaction():
+                cursor = await connection.execute(
+                    """
+                    INSERT INTO model_registry_models (
+                        id, display_name, provider, architecture, quantization,
+                        context_length, approval_status, is_enabled, metadata
+                    )
+                    VALUES (%s, %s, %s, %s, %s, %s, 'pending', FALSE,
+                            %s)
+                    ON CONFLICT (id) DO NOTHING
+                    RETURNING id
+                    """,
+                    (
+                        model_id, display_name, provider, architecture,
+                        quantization, context_length,
+                        Jsonb({"registration_source": "manual"}),
+                    ),
+                )
+                if await cursor.fetchone() is None:
+                    return False
+
+                for capability in sorted(normalized):
+                    await connection.execute(
+                        """
+                        INSERT INTO model_registry_capabilities (model_id, capability)
+                        VALUES (%s, %s)
+                        """,
+                        (model_id, capability),
+                    )
+
+                await connection.execute(
+                    """
+                    INSERT INTO model_registry_approvals
+                        (model_id, action, actor, notes)
+                    VALUES (%s, 'updated', 'admin', %s)
+                    """,
+                    (model_id, notes or "Manual registration; pending approval"),
+                )
+        return True
+
     async def sync_discovered_models(self, models: list[dict]):
         async with self.database.pool.connection() as connection:
             async with connection.transaction():
