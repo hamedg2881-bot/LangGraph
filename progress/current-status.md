@@ -292,3 +292,12 @@ The user explicitly confirmed that the Agent must be very complete and versatile
 - Hardened SearXNG result handling: bounded timeouts, explicit timeout/HTTP/service/invalid-response errors, response-shape validation, HTTP(S)-only links, URL deduplication, bounded snippets, and result counts.
 - Kept LangGraph structured tool dispatch (`bind_tools` → conditional ToolNode → assistant) and enabled ToolNode error conversion so tool exceptions can be handled by the assistant rather than silently presented as success.
 - Changes are committed to GitHub only. No DGX source, environment, SearXNG settings/container, Agent service, database, Dynamo worker, or model was changed. Syntax/import, structured tool-call parsing, and end-to-end Persian web research remain unverified until an approved deployment/test.
+
+
+## 2026-11-04 — Deterministic Agent tool-cycle test added (GitHub only)
+
+- Corrected `build_chat_graph(..., model=...)` so the supplied model is actually used. Previously the parameter was ignored and every graph invocation constructed a live Dynamo model, preventing isolated graph-level tests.
+- The production path still resolves the request-selected model by `model_id`; injected model is only used when explicitly supplied by the caller (e.g. tests).
+- Added `source/tests/test_chat_graph.py`: a deterministic async regression test that emits a structured `web_search` tool call, verifies ToolNode execution, verifies the resulting ToolMessage is passed back to the assistant, and checks the final answer.
+- The test is committed but has not been executed in the DGX virtual environment. No dependency assumptions or runtime compatibility are marked verified.
+- No host source, service, SearXNG, Dynamo worker, model, or database was changed.
