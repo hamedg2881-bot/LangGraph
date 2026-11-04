@@ -38,3 +38,34 @@ CREATE INDEX IF NOT EXISTS idx_model_registry_models_approval
 
 CREATE INDEX IF NOT EXISTS idx_model_registry_approvals_model
     ON model_registry_approvals (model_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS model_runtime_requests (
+    id UUID PRIMARY KEY,
+    model_id TEXT NOT NULL REFERENCES model_registry_models(id) ON DELETE RESTRICT,
+    state TEXT NOT NULL DEFAULT 'queued'
+        CHECK (state IN ('queued', 'running', 'completed', 'failed', 'cancelled')),
+    priority INTEGER NOT NULL DEFAULT 0,
+    owner TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    started_at TIMESTAMPTZ,
+    finished_at TIMESTAMPTZ,
+    heartbeat_at TIMESTAMPTZ,
+    error_code TEXT
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_runtime_requests_queue
+    ON model_runtime_requests (state, priority DESC, created_at);
+
+CREATE INDEX IF NOT EXISTS idx_model_runtime_requests_model_state
+    ON model_runtime_requests (model_id, state);
+
+CREATE TABLE IF NOT EXISTS model_runtime_leases (
+    request_id UUID PRIMARY KEY REFERENCES model_runtime_requests(id) ON DELETE CASCADE,
+    model_id TEXT NOT NULL REFERENCES model_registry_models(id) ON DELETE RESTRICT,
+    owner TEXT NOT NULL,
+    acquired_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at TIMESTAMPTZ NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_model_runtime_leases_model_expiry
+    ON model_runtime_leases (model_id, expires_at);
