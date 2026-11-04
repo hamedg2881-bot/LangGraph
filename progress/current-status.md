@@ -231,3 +231,10 @@ Important limitations / gates:
 - Important operational limitation: no automatic reconciliation/release endpoint has been added. A retained lease can keep a model's admission slot blocked until runtime termination is independently verified and a controlled reconciliation procedure is implemented. Do not manually delete leases merely because their timestamp expired.
 - GitHub source only. No host files, PostgreSQL schema/data, Agent service, Dynamo worker, container, or model was changed. No deployment/restart was performed.
 - Verification so far is source review and GitHub read-back only. Python syntax/import checks, schema migration against a disposable PostgreSQL database, queue concurrency tests, cancellation/disconnect tests, and Dynamo cancellation behavior remain required before deployment.
+
+
+## 2026-11-04 — Model Manager cancellation ownership
+
+- Disposable PostgreSQL tests passed for migration/idempotency, FIFO, priority, queue limits/timeouts, failure/cancellation lease retention, concurrent claims, independent Manager ownership, expired-lease capacity protection, and foreign Finish/Reconciliation rejection.
+- A two-Manager test exposed that cancel_request() allowed a foreign Manager to cancel a queued request. The canonical GitHub source now adds an owner predicate to this update.
+- The fix is not yet regression-tested or deployed. The failed test's finally block removed its disposable request and Registry row. No production database, host source, service, container, or model was changed.
