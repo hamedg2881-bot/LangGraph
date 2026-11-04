@@ -13,5 +13,9 @@ def create_chat_model(model: str | None = None) -> ChatOpenAI:
         temperature=0,
         timeout=settings.dynamo_timeout,
         max_retries=2,
-        extra_body={"chat_template_kwargs": {"enable_thinking": False}},
+        extra_body={
+            "chat_template_kwargs": {
+                "enable_thinking": settings.enable_thinking,
+            }
+        },
     )
