@@ -50,8 +50,9 @@ class ModelManager:
                 await connection.execute(
                     """
                     DELETE FROM model_runtime_leases
-                    WHERE expires_at < NOW()
-                    """
+                    WHERE model_id = %s AND expires_at < NOW()
+                    """,
+                    (model_id,),
                 )
                 await connection.execute(
                     """
