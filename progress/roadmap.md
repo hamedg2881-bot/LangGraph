@@ -162,3 +162,11 @@ Keep the existing central General Assistant architecture. Do not add a separate 
 - [ ] Run compile/import and focused tool tests against the exact host dependency versions.
 - [ ] Verify Qwen3.8-VL emits compatible structured tool calls through the active Dynamo parser.
 - [ ] Verify SearXNG JSON output and Persian research end-to-end after explicit deployment approval.
+
+
+### General Assistant tool-cycle validation — 2026-11-04
+- [x] Make graph model injection functional so the tool cycle can be tested without contacting Dynamo.
+- [x] Add deterministic async regression test for structured tool call → ToolNode → ToolMessage → final assistant response.
+- [ ] Execute the regression test in the DGX Agent virtual environment and resolve any dependency/API mismatch.
+- [ ] Validate actual Qwen3.8-VL structured tool calls through Dynamo's configured parser.
+- [ ] Run end-to-end Persian SearXNG research after explicit deployment approval.
