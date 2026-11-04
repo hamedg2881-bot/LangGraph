@@ -6,7 +6,7 @@ from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from psycopg.conninfo import make_conninfo
 
 from app.api.routes import router
-from app.api.admin_routes import router as admin_router
+from app.api.admin_routes import router as admin_router, model_manager_router
 from app.config import get_settings
 from app.graph import build_chat_graph
 from app.registry.database import RegistryDatabase
@@ -56,6 +56,7 @@ app = FastAPI(
 
 app.include_router(router)
 app.include_router(admin_router)
+app.include_router(model_manager_router)
 
 
 @app.get("/health")
