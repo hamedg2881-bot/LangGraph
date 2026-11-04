@@ -136,3 +136,19 @@ Remaining before deployment:
 6. Design authenticated Control Center admin sessions before exposing any Registry mutation or Model Manager actions in the browser.
 7. After source review and explicit user approval, synchronize files, apply additive schema via controlled Agent startup, and verify health/API behavior. No deployment is authorized by these GitHub commits.
 - Queue backpressure has a configurable per-model queued-request ceiling (default 1000). Validate the chosen limit and HTTP/SSE behavior in load tests before production deployment.
+
+
+## General Assistant product quality — primary priority (2026-11-04)
+
+The primary outcome is a polished, all-purpose chat experience through one logical `Auto` assistant. Work should be organized as coherent end-to-end capabilities, not disconnected demos.
+
+Required capability tracks:
+1. Core conversation quality: intent understanding, appropriate reasoning depth, reliable concise/detailed answers, multilingual Persian RTL, and robust error handling.
+2. Conversation continuity: checkpoint correctness, durable context, edited/regenerated branch handling, concurrent-turn safety, and explicit memory boundaries.
+3. Tool orchestration: real structured tool calls, SearXNG search, source-grounded answers, tool timeouts/failures/cancellation, and reusable Tool Registry contracts.
+4. Multimodal work: vision and image understanding, document/file analysis, and later audio/video where reliable.
+5. Coding and workspace tasks: route to approved coding capability and controlled workspace tools within the same assistant.
+6. Intelligent model routing: choose by capability and task complexity while respecting Registry eligibility and Model Manager resource/queue policies.
+7. Product acceptance: test meaningful end-to-end tasks through Open WebUI → Auto → Agent → tools/models, including failures. Do not mark a capability complete based only on source implementation or a successful health endpoint.
+
+Keep the existing central General Assistant architecture. Do not add a separate Coding Agent by default. Preserve production state and obtain explicit approval before deployment or service/worker restarts. See `architecture/assistant-quality.md` for the full acceptance contract.
