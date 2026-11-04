@@ -73,3 +73,16 @@
 44. The existing Control Center has no admin-session authentication. Registry and Model Manager mutations must not be exposed through it until server-side authentication, CSRF protections as applicable, validation, and audit logging are implemented.
 45. Monitoring may show only measured values from real APIs/telemetry; unimplemented queue, residency, and lifecycle states must be explicitly unavailable, never simulated.
 46. The four areas must be delivered as one coherent integration, but implementation is gated by exact source capture, additive DB migration, queue/lease tests, Dynamo lifecycle validation, and authenticated UI integration.
+
+
+## 2026-11-04 — General Assistant quality as primary product requirement
+
+47. The primary product objective is a high-quality, all-purpose General Assistant and chat experience; success is measured by end-to-end task quality, not merely successful model/API/tool startup.
+48. Keep one central General Assistant on LangGraph. Open WebUI exposes only logical `Auto`; model and tool selection remain internal. Do not create a separate Coding Agent by default.
+49. The assistant must understand intent, preserve durable conversation context, use real structured tool execution, and complete multi-step tasks when authorized.
+50. Support Persian RTL and multilingual conversations as first-class UX requirements.
+51. Required capability domains include general chat/reasoning, live web research via SearXNG, vision, document/file analysis, coding/workspace tasks, and image-generation workflows, with additional modalities added only after reliable integration.
+52. Route by capability fit, task complexity, quality, reliability, context length, and resource cost; do not optimize only for speed.
+53. A feature is not complete until it is integrated through the same Auto experience and verified end-to-end for success and relevant failure paths. Clearly mark unimplemented or unverified capabilities as pending.
+54. Preserve existing checkpointer data and Model Manager safety: queue when resources are busy; never forcibly interrupt in-flight work; do not deploy/restart production components without explicit user approval.
+55. The detailed acceptance contract is maintained in `architecture/assistant-quality.md`.
