@@ -99,3 +99,20 @@
 - [ ] Keep lifecycle controls read-only until a safe Model Manager API supports request leases, queueing, drain, and safe unload.
 - [ ] Remove/retire stale profile manifest usage only after the replacement is verified; retain backups during migration.
 - [ ] Build and test locally; deploy/restart only after explicit approval.
+
+
+## Unified management delivery — integrated priority (2026-11-04)
+
+The four capabilities are one deliverable; do not ship isolated mock controls. Full contract: [architecture/model-management.md](../architecture/model-management.md).
+
+- [ ] Capture exact current host source for all Agent modules to be changed; do not reconstruct missing files.
+- [ ] Additive Registry migration and metadata-only manual model registration (new models pending/disabled, audit logged).
+- [ ] Durable PostgreSQL request queue and request leases; streaming-safe release on success, failure, timeout, and disconnect.
+- [ ] Queue admission/backpressure, cancellation, FIFO/priority policy, stale lease recovery, and concurrency tests.
+- [ ] Validate supported Dynamo 1.6.1 bare-metal worker lifecycle control surface; resolve shared frontend/worker topology and existing port 8013 collision.
+- [ ] Implement gated lifecycle adapter, memory admission with safety reserve, serialized load, drain-first unload, safe idle eviction, and recovery tests.
+- [ ] Add authenticated Model Manager APIs and secure Control Center admin session; do not expose mutations anonymously.
+- [ ] Extend Runtime and Monitoring with measured GPU memory, model desired/observed residency, active leases, queue depth, worker readiness, and operation events.
+- [ ] Build/unit/integration/smoke tests, then one coordinated deployment after explicit user approval.
+
+Current hard gates: exact host source capture; Dynamo bare-metal lifecycle adapter validation; Control Center administrator authentication. No queue/lifecycle APIs or UI controls are implemented yet; no synthetic metrics are permitted.
