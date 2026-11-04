@@ -172,3 +172,14 @@ Keep the existing central General Assistant architecture. Do not add a separate 
 - [ ] Run end-to-end Persian SearXNG research after explicit deployment approval.
 - [x] Add deterministic SearXNG response validation and URL-filtering regression tests.
 - [ ] Execute graph and SearXNG tests in the DGX Agent virtual environment.
+
+### Deterministic web research routing — 2026-11-04
+- [x] Add Persian/English intent detection for explicit web research and current-information requests.
+- [x] Force a structured web tool call on the first assistant response for a detected research turn.
+- [x] Return to automatic tool choice after the tool result so the assistant can synthesize or continue focused research.
+- [x] Disable Qwen thinking only for web-research turns, retaining the configured thinking behavior for normal chat.
+- [x] Inject the server-local runtime date/time into the system prompt.
+- [x] Add deterministic regression coverage for routing and tool execution.
+- [ ] Run compile/import and unit tests in the DGX Agent virtual environment.
+- [ ] Run one bounded live Persian research request through Agent Auto and verify SearXNG results, structured tool calls, citations, and final answer.
+- [ ] Verify streaming requests preserve the same tool execution and final-response behavior.
