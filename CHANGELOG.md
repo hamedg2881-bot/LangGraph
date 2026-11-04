@@ -186,3 +186,5 @@
 - Fixed the unused `model` injection parameter in `build_chat_graph`; tests can now provide a deterministic model, while production continues to resolve the request-selected Dynamo model ID.
 - Added an async regression test for structured tool-call parsing, ToolNode execution, returning the tool result to the assistant, and producing a final response.
 - GitHub-only source/test change. Test execution and runtime Qwen/Dynamo tool-parser compatibility remain pending; no host deployment or service restart was performed.
+
+- Added deterministic SearXNG tool tests covering invalid/duplicate URL filtering, result bounds, JSON format, and malformed response handling. Tests are committed but not run in the production virtual environment.
