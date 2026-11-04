@@ -238,3 +238,11 @@ This is a product requirement and architecture/documentation change only. It doe
 |---|---|---|
 | source/app/tools/web.py | SearXNG JSON search tool with timeout/error classification, response validation, HTTP(S)-only URL filtering, and duplicate removal | Updated in GitHub only; not synchronized or tested on DGX |
 | source/app/graph/chat.py | General Assistant system behavior, explicit live-search policy, ToolNode execution and tool-error handling | Updated in GitHub only; not synchronized or tested on DGX |
+
+
+## General Assistant deterministic tool-cycle test — 2026-11-04
+
+| Repository path | Purpose | Verification |
+|---|---|---|
+| source/tests/test_chat_graph.py | Deterministic async regression test: model emits a structured web_search tool call, ToolNode executes it, and the assistant receives ToolMessage before final response | Added to GitHub; not executed in the DGX virtual environment |
+| source/app/graph/chat.py | Uses the injected model argument when supplied, allowing deterministic graph tests without a live Dynamo call; production path continues creating the selected model by model_id | Updated in GitHub; not deployed |
