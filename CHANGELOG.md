@@ -115,3 +115,13 @@
 - Runtime discovery reports seven running containers and two exited legacy containers.
 - Noted stale Registry `last_seen_at` timestamps (2026-11-03) despite current Dynamo discovery; investigate explicit Registry sync before any source changes.
 - No model lifecycle, Compose, or database mutation was performed by the verification tests.
+
+
+## 2026-11-04 — Unified model management architecture recorded
+
+- Recorded the latest verified Control Center 2.0.0 deployment and successful explicit Agent Registry synchronization (2 discovered models; both timestamps refreshed).
+- Added the integrated design contract for Registry manual metadata registration, durable request queue/leases, resource-aware model residency, safe drain-first eviction, Runtime Management, and measured Monitoring.
+- Documented the hard gate for validating a supported Dynamo 1.6.1 bare-metal worker lifecycle adapter; Kubernetes Operator behavior is not assumed to be available in the current Docker Compose deployment.
+- Recorded the Control Center admin-authentication requirement before exposing mutating endpoints.
+- Updated decisions, current status, roadmap, README, and source inventory.
+- Documentation-only GitHub update. No host source, database, services, containers, models, or runtime configuration were changed. No secrets were committed.
