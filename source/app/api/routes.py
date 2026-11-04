@@ -195,7 +195,7 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
             timeout_seconds=request.app.state.settings.model_queue_timeout,
         ):
             result = await request.app.state.graph.ainvoke(
-                {"messages": messages},
+                {"messages": graph_messages},
                 config=config,
             )
 
