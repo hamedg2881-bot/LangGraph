@@ -169,3 +169,13 @@
 - Documented quality requirements for intent understanding, reasoning, conversation continuity, real tool execution, SearXNG web research, vision, document/file analysis, coding/workspace, image-generation workflows, Persian RTL, routing, safety, and end-to-end acceptance.
 - Updated architecture overview, confirmed decisions, roadmap, current status, README links, and source inventory.
 - Documentation and GitHub only; no host deployment, service restart, worker/model change, or database operation was performed.
+
+
+## 2026-11-04 — General Assistant tool orchestration hardening (GitHub only)
+
+- Improved the General Assistant system prompt for task completion, multilingual/Persian RTL behavior, safe defaults, multi-step work, truthful action reporting, and transparent failure handling.
+- Strengthened web-search usage requirements for current/recent questions and explicit research requests; responses must rely on actual returned URLs and distinguish search errors from successful evidence.
+- Hardened SearXNG integration with bounded timeouts, explicit error categories, response validation, HTTP(S)-only URL filtering, deduplication, bounded snippets, and result counts.
+- Kept structured LangGraph tool execution and enabled ToolNode error handling.
+- Updated source inventory, tool-calling architecture, current status, and roadmap.
+- GitHub-only source/documentation changes. No host deployment, service restart, SearXNG configuration, database, worker, or model changes were performed. Runtime verification remains pending.
