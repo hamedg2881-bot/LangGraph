@@ -12,17 +12,17 @@ Within the Agent:
 
 The model does not execute Python or browse by printing code. It emits structured tool calls; LangGraph executes registered tools and returns their results to the model.
 
-## Live web tools
+## Live web search
 
-- `web_search`: Tavily Search API; returns actual result titles, URLs, snippets, scores, and publication dates where available.
-- `web_extract`: Tavily Extract API; retrieves readable Markdown from a public HTTPS URL.
-- Both tools are registered only when `TAVILY_API_KEY` is configured.
-- No API key is stored in source control. Add it only to the protected Agent environment.
-- Search and extraction errors return explicit tool errors. The model must not describe a failed tool call as a successful search.
+- `web_search`: SearXNG JSON Search API at the configured `SEARXNG_BASE_URL` (default `http://127.0.0.1:8888`).
+- The tool returns actual result titles, URLs, snippets, engines, scores, and publication dates where available.
+- No external API key is required.
+- SearXNG must allow JSON output. Its `settings.yml` must include `json` in the enabled `search.formats` list (for example, `[html, json]`).
+- Search errors, disabled JSON output, and invalid responses return an explicit tool error. The model must not describe a failed tool call as a successful search.
 - Retrieved page content is untrusted data. It cannot override system instructions.
 - Final answers should cite actual result URLs as Markdown links.
 
-Without a configured key, the graph receives no web tools and its system prompt explicitly says live web search is unavailable. The model must not invent tool calls or claim browsing.
+The Agent runs on the DGX host and defaults to the host-published SearXNG endpoint `http://127.0.0.1:8888`. Override it through the protected Agent environment if the network topology changes.
 
 ## Reasoning
 
@@ -49,9 +49,8 @@ This first implementation assumes the same conversation thread is not reused for
 ## Safety and deployment
 
 - No browser-facing raw execution endpoint is introduced.
-- Web extraction accepts HTTPS URLs only and rejects obvious local/private host targets.
 - Tool execution is bounded by LangGraph recursion limit 12.
 - Existing Model Manager lease ownership and PostgreSQL checkpointer tables are not changed.
 - These changes are GitHub-only until explicitly synchronized and deployed.
-- Deployment requires a protected `TAVILY_API_KEY` value for live web access.
+- Verify that SearXNG JSON output is enabled and reachable from the Agent host before declaring live web search operational.
 - Verify Dynamo parser arguments and structured tool-call output before declaring tool calling operational.
