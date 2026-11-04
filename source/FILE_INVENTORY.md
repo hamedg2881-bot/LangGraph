@@ -149,3 +149,16 @@ The following files were supplied from the live host at `/opt/ai/langgraph-agent
 | app/registry/schema.sql | Existing PostgreSQL model Registry schema | source/app/registry/schema.sql |
 
 The live `config/agent.env` was not read, copied, or committed. These snapshots complete the missing runtime/config/schema source files needed to reason about the installed Agent. They do not represent a deployment or service restart.
+
+## Model Manager implementation source — 2026-11-04 (GitHub only)
+
+| Repository path | Purpose | Deployment status |
+|---|---|---|
+| source/app/model_manager.py | Durable per-model queue admission, PostgreSQL request leases, heartbeat, recovery, cancellation, and queue snapshots | Committed; not deployed or tested |
+| source/app/registry/schema.sql | Additive model_runtime_requests and model_runtime_leases tables | Committed; not applied to host DB |
+| source/app/api/admin_routes.py | Manual metadata-only registration and authenticated Model Manager status/queue/cancel endpoints; lifecycle load/unload returns explicit HTTP 501 | Committed; not deployed |
+| source/app/config/settings.py | Queue timeout and per-model active request settings | Committed; not deployed |
+| source/app/main.py | ModelManager initialization and authenticated router registration | Committed; not deployed |
+| source/app/api/routes.py | Streaming and non-streaming inference protected by request leases | Committed; not deployed |
+
+The queue/lease source is a first implementation checkpoint, not a production-validated Model Manager. Syntax/import checks, PostgreSQL integration tests, concurrency and streaming-disconnect tests, resource-aware admission, Dynamo lifecycle control, GPU memory monitoring, and authenticated Control Center administration remain outstanding. No host source or runtime was changed.
