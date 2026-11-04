@@ -238,3 +238,23 @@ Important limitations / gates:
 - Disposable PostgreSQL tests passed for migration/idempotency, FIFO, priority, queue limits/timeouts, failure/cancellation lease retention, concurrent claims, independent Manager ownership, expired-lease capacity protection, and foreign Finish/Reconciliation rejection.
 - A two-Manager test exposed that cancel_request() allowed a foreign Manager to cancel a queued request. The canonical GitHub source now adds an owner predicate to this update.
 - The fix is not yet regression-tested or deployed. The failed test's finally block removed its disposable request and Registry row. No production database, host source, service, container, or model was changed.
+
+
+## 2026-11-04 — General Assistant quality and tool-calling review
+
+Source review of the canonical Agent snapshot found that the graph had only one assistant node and called Dynamo directly; there was no ToolNode or tool execution loop. The API also passed the complete Open WebUI message history into a persistent LangGraph thread on every turn, risking duplicate history because the PostgreSQL checkpointer already retained prior messages.
+
+GitHub-only changes now:
+- Added an actual LangGraph assistant → ToolNode → assistant cycle.
+- Added optional Tavily live search and page extraction tools. They are exposed to the model only when TAVILY_API_KEY is configured. Without the key, the system prompt explicitly prohibits claiming live web access or printing pseudo-tool code.
+- Added source-link requirements and untrusted-page instruction handling to the system prompt.
+- Enabled Qwen reasoning by default through ENABLE_THINKING (configurable).
+- Updated the active Qwen3.8-VL Compose snapshot with Dynamo's qwen3_coder tool parser and qwen3 reasoning parser, matching the Qwen3.5/Qwen3.8 parser family documented by NVIDIA.
+- Changed request handling to use the persisted conversation state plus only the latest incoming user message after the first turn, avoiding repeated submission of the full Open WebUI transcript. Incoming system/developer instructions are passed separately to the graph.
+
+Deployment gates:
+- All changes are in GitHub only. They have not been copied to the host, installed, tested against the active Dynamo 1.6.1 image, or deployed.
+- Live web search remains unavailable until a Tavily API key is configured securely in the host's Agent environment. Never commit or paste the key into GitHub.
+- The Vision38 worker must be recreated with the updated Compose arguments before Qwen3.8 tool calls and reasoning parsing can work. This is not yet performed.
+- The Agent's streaming/non-streaming tool cycle, checkpoint continuity, model tool-call parsing, and end-to-end search must be verified after deployment.
+- Existing PostgreSQL checkpointer data and Model Manager tables must be preserved; no database reset or migration is part of this change.
