@@ -42,6 +42,7 @@ async def lifespan(app: FastAPI):
             app.state.model_manager = ModelManager(
                 registry_database,
                 max_active_per_model=settings.model_max_active_per_model,
+                max_queue_size=settings.model_max_queue_size,
             )
             yield
         finally:
