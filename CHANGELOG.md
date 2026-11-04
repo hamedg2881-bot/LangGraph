@@ -139,3 +139,14 @@
 - All changes are committed to GitHub only. They have not been compiled, tested against the host database, deployed, or restarted. No host or runtime state was changed.
 - Added configurable per-model queue backpressure; full queues return HTTP 429 or an SSE rate-limit error without starting inference.
 - Admin cancellation now marks only queued requests; the waiting chat caller detects cancellation promptly. Running inference remains untouched. This behavior is source-committed but not yet integration-tested.
+
+
+## 2026-11-04 — Model Manager lease safety and package correction (GitHub only)
+
+- Added all six explicit __init__.py package files; the config and graph packages export the symbols imported by Agent startup.
+- Removed expired-lease deletion and automatic failure/reclaim behavior. Admission now counts retained leases regardless of expiry and fails closed on running requests with missing leases.
+- Added reconciliation_required for failed/cancelled invocations whose remote inference termination cannot be verified; these requests retain capacity leases.
+- Heartbeat retries transient database failures with bounded backoff; it does not convert a missed heartbeat into proof that inference stopped.
+- Replaced FOR UPDATE SKIP LOCKED with a row lock under the per-model advisory lock to preserve queue ordering.
+- Added an SSE-specific queue-timeout error.
+- Source changes are committed to GitHub only. No host, database, service, worker, or model state was modified. Deployment remains blocked on syntax/import validation, PostgreSQL migration tests, concurrency/stream cancellation tests, and a safe runtime reconciliation procedure.
