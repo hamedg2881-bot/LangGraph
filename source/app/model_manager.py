@@ -211,10 +211,10 @@ class ModelManager:
                 """
                 UPDATE model_runtime_requests
                 SET state = 'cancelled', finished_at = NOW()
-                WHERE id = %s AND state = 'queued'
+                WHERE id = %s AND owner = %s AND state = 'queued'
                 RETURNING id
                 """,
-                (uuid.UUID(request_id),),
+                (uuid.UUID(request_id), self.owner),
             )
             return await cursor.fetchone() is not None
 
