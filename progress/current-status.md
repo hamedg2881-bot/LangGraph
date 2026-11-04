@@ -216,3 +216,4 @@ Important limitations / gates:
 - Automatic model loading/unloading, resource-based admission, GPU memory accounting, worker desired/observed state reconciliation, and safe drain are not implemented. The API reports lifecycle unsupported rather than fabricating success.
 - Control Center Registry mutation UI remains unavailable because it has no administrator session authentication. Do not expose manual registration or mutations through anonymous browser routes.
 - No host files, database rows, services, containers, or model runtime state were changed by these GitHub commits.
+- Queue admission now has a configurable per-model pending-queue ceiling (`MODEL_MAX_QUEUE_SIZE`, default 1000); a full queue returns HTTP 429 for non-streaming requests and an SSE rate-limit error for streaming requests.
