@@ -137,3 +137,4 @@
 - Added authenticated Model Manager status/queue/cancel endpoints. Load/unload endpoints explicitly return HTTP 501 until a supported graceful Dynamo 1.6.1 Compose lifecycle mechanism is validated.
 - Updated source inventory, current status, and roadmap.
 - All changes are committed to GitHub only. They have not been compiled, tested against the host database, deployed, or restarted. No host or runtime state was changed.
+- Added configurable per-model queue backpressure; full queues return HTTP 429 or an SSE rate-limit error without starting inference.
