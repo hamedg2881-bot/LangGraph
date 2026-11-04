@@ -158,3 +158,14 @@
 - Updated cancel_request() to require both request ID and the calling manager's owner, matching the ownership boundary already enforced by cancel_queued().
 - The cross-manager cancellation test exposed the issue on the disposable langgraph_migration_test database. Its finally cleanup removed the test request and model; no production database or service was touched.
 - The source fix is committed to GitHub only. It has not yet been fetched into the review workspace, regression-tested, synchronized to the host, or deployed.
+
+
+## 2026-11-04
+
+### Product direction — high-quality all-purpose General Assistant
+
+- Added `architecture/assistant-quality.md` as the governing product and acceptance contract.
+- Recorded that the primary goal is a complete, versatile, high-quality chat experience through one central General Assistant and logical Auto model.
+- Documented quality requirements for intent understanding, reasoning, conversation continuity, real tool execution, SearXNG web research, vision, document/file analysis, coding/workspace, image-generation workflows, Persian RTL, routing, safety, and end-to-end acceptance.
+- Updated architecture overview, confirmed decisions, roadmap, current status, README links, and source inventory.
+- Documentation and GitHub only; no host deployment, service restart, worker/model change, or database operation was performed.
