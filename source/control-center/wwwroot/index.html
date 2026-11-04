@@ -51,8 +51,12 @@ button,select{font:inherit;border:1px solid #405777;border-radius:9px;padding:8p
 
 <section class="page" id="page-registry">
  <div class="toolbar"><div><h2>Model Registry</h2><div class="note small">منبع حقیقت برای تأیید، فعال‌بودن و قابلیت‌های هر مدل</div></div><div><button id="registry-sync">کشف مدل‌ها از Dynamo</button> <button id="registry-refresh">بارگذاری مجدد</button></div></div>
- <div id="registry-note" class="note small">در حال اتصال امن سرور به Agent Registry…</div>
- <div class="table-wrap"><table><thead><tr><th>شناسه / نام</th><th>Provider</th><th>تأیید</th><th>فعال</th><th>قابلیت‌ها</th><th>Context</th><th>Runtime</th><th>قابل انتخاب</th><th>آخرین مشاهده</th><th>عملیات</th></tr></thead><tbody id="registry-rows"><tr><td colspan="9" class="empty">در انتظار داده…</td></tr></tbody></table></div>
+ <div class="toolbar">
+  <input id="registry-search" type="search" placeholder="جست‌وجوی شناسه، نام یا Provider">
+  <select id="registry-filter"><option value="all">همه وضعیت‌ها</option><option value="pending">در انتظار تأیید</option><option value="approved">تأییدشده</option><option value="rejected">ردشده</option><option value="selectable">قابل انتخاب</option><option value="unavailable">Runtime ناموجود</option></select>
+ </div>
+ <div id="registry-note" class="note small">در حال اتصال سرور به Agent Registry…</div>
+ <div class="table-wrap"><table><thead><tr><th>شناسه / نام</th><th>Provider</th><th>معماری</th><th>Quantization</th><th>تأیید</th><th>فعال</th><th>قابلیت‌ها</th><th>Context</th><th>Runtime</th><th>قابل انتخاب</th><th>آخرین مشاهده</th><th>عملیات</th></tr></thead><tbody id="registry-rows"><tr><td colspan="12" class="empty">در انتظار داده…</td></tr></tbody></table></div>
  <p class="note small">عملیات این بخش از طریق سرور به Agent Registry ارسال می‌شوند؛ کلید مدیریتی به مرورگر منتقل نمی‌شود. دسترسی این پنل فعلاً بدون احراز هویت است و باید فقط در شبکه مورداعتماد قرار گیرد.</p>
 </section>
 
@@ -111,8 +115,14 @@ function renderRuntime(items){
 }
 function renderRegistry(items){
  registryItems=items||[];
- const rows=registryItems.map(m=>'<tr><td><strong>'+esc(m.display_name||m.id)+'</strong><div class="note small">'+esc(m.id)+'</div></td><td>'+esc(m.provider)+'</td><td><span class="'+cls(m.approval_status)+'">'+esc(m.approval_status)+'</span></td><td><span class="'+(m.is_enabled?'ok':'bad')+'">'+(m.is_enabled?'بله':'خیر')+'</span></td><td>'+(m.capabilities||[]).map(c=>'<span class="cap">'+esc(c)+'</span>').join('')+'</td><td>'+esc(fmt(m.context_length))+'</td><td><span class="'+cls(m.runtime_status)+'">'+esc(m.runtime_status||'unknown')+'</span></td><td><span class="'+(m.selectable?'ok':'warn')+'">'+(m.selectable?'بله':'خیر')+'</span></td><td>'+esc(m.last_seen_at?new Date(m.last_seen_at).toLocaleString('fa-IR'):'—')+'</td><td class="actions"><button data-model-action="edit" data-id="'+esc(m.id)+'">ویرایش</button> <button data-model-action="'+(m.approval_status==='approved'?'reject':'approve')+'" data-id="'+esc(m.id)+'">'+(m.approval_status==='approved'?'رد':'تأیید')+'</button> <button data-model-action="'+(m.is_enabled?'disable':'enable')+'" data-id="'+esc(m.id)+'">'+(m.is_enabled?'غیرفعال':'فعال')+'</button></td></tr>').join('');
- $('registry-rows').innerHTML=rows||'<tr><td colspan="9" class="empty">مدلی در Registry ثبت نشده است.</td></tr>';
+ const q=($('registry-search')?.value||'').trim().toLowerCase(),filter=$('registry-filter')?.value||'all';
+ const visible=registryItems.filter(m=>{
+  const match=!q||[m.id,m.display_name,m.provider,m.architecture,m.quantization].some(v=>String(v||'').toLowerCase().includes(q));
+  const status=filter==='all'||(filter==='selectable'?!!m.selectable:filter==='unavailable'?m.runtime_status==='unavailable':m.approval_status===filter);
+  return match&&status;
+ });
+ const rows=visible.map(m=>'<tr><td><strong>'+esc(m.display_name||m.id)+'</strong><div class="note small">'+esc(m.id)+'</div></td><td>'+esc(m.provider)+'</td><td>'+esc(m.architecture||'—')+'</td><td>'+esc(m.quantization||'—')+'</td><td><span class="'+cls(m.approval_status)+'">'+esc(m.approval_status)+'</span></td><td><span class="'+(m.is_enabled?'ok':'bad')+'">'+(m.is_enabled?'بله':'خیر')+'</span></td><td>'+(m.capabilities||[]).map(c=>'<span class="cap">'+esc(c)+'</span>').join('')+'</td><td>'+esc(fmt(m.context_length))+'</td><td><span class="'+cls(m.runtime_status)+'">'+esc(m.runtime_status||'unknown')+'</span></td><td><span class="'+(m.selectable?'ok':'warn')+'">'+(m.selectable?'بله':'خیر')+'</span></td><td>'+esc(m.last_seen_at?new Date(m.last_seen_at).toLocaleString('fa-IR'):'—')+'</td><td class="actions"><button data-model-action="edit" data-id="'+esc(m.id)+'">ویرایش</button> <button data-model-action="'+(m.approval_status==='approved'?'reject':'approve')+'" data-id="'+esc(m.id)+'">'+(m.approval_status==='approved'?'رد':'تأیید')+'</button> <button data-model-action="'+(m.is_enabled?'disable':'enable')+'" data-id="'+esc(m.id)+'">'+(m.is_enabled?'غیرفعال':'فعال')+'</button></td></tr>').join('');
+ $('registry-rows').innerHTML=rows||'<tr><td colspan="12" class="empty">مدلی مطابق فیلتر پیدا نشد.</td></tr>';
  $('overview-models').innerHTML=registryItems.slice(0,4).map(m=>card(m.display_name||m.id,m.approval_status,'قابلیت‌ها: '+(m.capabilities||[]).join('، ')+' · فعال: '+(m.is_enabled?'بله':'خیر'))).join('')||'<div class="empty">فهرست Registry خالی است.</div>';
 }
 async function registryAction(path,method='POST',body={}) {
@@ -189,6 +199,8 @@ document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',(
 document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>document.querySelector('[data-page="'+b.dataset.goto+'"]').click()));
 $('refresh').addEventListener('click',refresh);$('registry-refresh').addEventListener('click',loadRegistry);$('registry-sync').addEventListener('click',syncRegistry);$('events-refresh').addEventListener('click',refreshEvents);
 $('history-range').addEventListener('change',refreshHistory);
+$('registry-search').addEventListener('input',()=>renderRegistry(registryItems));
+$('registry-filter').addEventListener('change',()=>renderRegistry(registryItems));
 $('refresh').click();loadRegistry();refreshHistory();refreshEvents();
 setInterval(refresh,15000);setInterval(loadRegistry,60000);setInterval(refreshHistory,60000);setInterval(refreshEvents,60000);
 window.addEventListener('resize',()=>refreshHistory());
