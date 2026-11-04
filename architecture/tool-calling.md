@@ -70,3 +70,13 @@ The General Assistant prompt requires live search for current/recent questions a
 `source/tests/test_chat_graph.py` exercises a complete structured tool cycle with a fake model and deterministic tool: model tool call → LangGraph ToolNode execution → ToolMessage returned to model → final assistant message. The test is committed but is not yet run against the DGX virtual environment. It does not establish compatibility with the live Qwen parser or SearXNG service.
 
 `source/tests/test_web_search.py` adds deterministic tests for result URL filtering/deduplication, max-result bounds, JSON request mode, and malformed provider responses. These tests have been committed but not executed in the deployed environment.
+
+## Deterministic web-research routing — 2026-11-04
+
+The Agent now classifies the latest user message before the first assistant response in a turn. Explicit web research and current-information intents (English and Persian patterns) bind the registered web tool with `tool_choice="required"` for that first model call. This removes the initial decision to browse from the model's unreliable `auto` choice. After a ToolMessage is returned, the graph switches back to `auto` so the assistant can synthesize results and optionally request additional focused searches.
+
+For research turns, the Dynamo model factory disables Qwen thinking for that request only. This is a targeted compatibility measure based on observed runtime behavior: structured tool calls worked with `required` and thinking disabled, while `auto` plus thinking emitted textual tool markup rather than structured calls; a later `required` plus thinking request did not complete within the 180-second client timeout. Normal chat retains the configured thinking setting.
+
+The system prompt now includes the server-local runtime date/time to prevent the model from inventing a current date. This is runtime-generated, not a fixed date.
+
+Regression coverage checks Persian/English intent detection, normal-chat auto routing, forced first-call routing, transition back to auto after tool execution, and runtime date injection. These source changes are committed to GitHub only; they have not been synchronized to or executed on the DGX host. Live model/parser compatibility and end-to-end SearXNG research remain pending host-side verification.
