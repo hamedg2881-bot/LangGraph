@@ -197,3 +197,22 @@ The user supplied complete host output for app/api/admin_routes.py, app/api/admi
 - Dynamo 1.6.1 documentation describes discovery and Planner control signals; the Operator reconciles desired worker counts in Kubernetes. This does not establish a supported bare-metal load/unload HTTP API for this Docker Compose deployment. Worker lifecycle adapter remains a hard implementation gate.
 - A unified implementation contract was added at `architecture/model-management.md`. It defines manual metadata-only registration, durable queue/leases, resource admission, drain-first eviction, lifecycle adapter validation, Control Center admin security, monitoring, tests, and deployment gates.
 - No host source, Agent service, database schema/data, worker/container, model, or Control Center runtime was changed during this documentation update.
+
+
+## 2026-11-04 — Agent Model Manager implementation committed to GitHub (not deployed)
+
+The user supplied the exact live host contents of `app/config/settings.py`, `app/providers/dynamo.py`, and `app/registry/schema.sql`. These three files are now archived byte-for-byte in `source/app/`; no environment file or secret was read or committed.
+
+GitHub-only implementation added:
+- Manual metadata-only model registration at authenticated `POST /admin/models`. New records are always `pending` and disabled; duplicate IDs return conflict. Registration does not download, install, load, or activate a model.
+- Additive PostgreSQL tables `model_runtime_requests` and `model_runtime_leases` in `source/app/registry/schema.sql`; existing Registry and LangGraph checkpointer tables are not altered.
+- Durable per-model FIFO admission with PostgreSQL advisory transaction locks, renewable leases, heartbeat, queue timeout, completion/failure/cancellation states, stale lease recovery, and active/queued snapshots.
+- Chat and streaming requests acquire a lease before inference and retain it for the graph execution/stream. Queued requests can be cancelled; running requests are not force-cancelled.
+- Authenticated Model Manager status/queue endpoints. Load/unload endpoints explicitly return HTTP 501 because graceful worker lifecycle control has not been validated for this bare-metal Dynamo 1.6.1 Compose deployment. No Docker stop/start behavior is implemented.
+- Configurable `MODEL_MAX_ACTIVE_PER_MODEL` and `MODEL_QUEUE_TIMEOUT` settings; default per-model concurrency is 8, matching the known worker sequence ceiling but still requiring live-load validation.
+
+Important limitations / gates:
+- These source changes are committed to GitHub only. They have not been syntax-checked, tested against PostgreSQL, load-tested, synchronized to the host, or deployed. The next Agent startup would execute the additive schema statements through the existing Registry initializer; do not restart before review and explicit approval.
+- Automatic model loading/unloading, resource-based admission, GPU memory accounting, worker desired/observed state reconciliation, and safe drain are not implemented. The API reports lifecycle unsupported rather than fabricating success.
+- Control Center Registry mutation UI remains unavailable because it has no administrator session authentication. Do not expose manual registration or mutations through anonymous browser routes.
+- No host files, database rows, services, containers, or model runtime state were changed by these GitHub commits.
