@@ -221,3 +221,12 @@ These are canonical GitHub source/configuration changes only. They have not been
 | architecture/tool-calling.md | SearXNG API, JSON-format prerequisite, and deployment checks | Updated |
 
 Host SearXNG is known to run as container `searxng`, published on `127.0.0.1:8888`/host port 8888. JSON output enablement and Agent-to-SearXNG reachability still require host verification. No host files, environment variables, containers, services, or databases were changed.
+
+
+## General Assistant quality contract — 2026-11-04
+
+| Repository path | Purpose | Status |
+|---|---|---|
+| architecture/assistant-quality.md | Product objective, quality dimensions, implementation principles, and end-to-end acceptance standard for the all-purpose General Assistant | Added; governing design/acceptance document |
+
+This is a product requirement and architecture/documentation change only. It does not claim that all listed capabilities are implemented or deployed.
