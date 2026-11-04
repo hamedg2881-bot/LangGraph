@@ -260,3 +260,10 @@ This is a product requirement and architecture/documentation change only. It doe
 
 No host source, Agent service, Dynamo worker, model, database, or environment file was changed. Host synchronization and test execution remain pending explicit user approval.
 \n\n## Qwen XML tool-call compatibility adapter — 2026-11-04 (GitHub only)\n\n| Repository path | Purpose | Status |\n|---|---|---|\n| source/app/tools/qwen_tool_calls.py | Strictly recognizes complete Qwen XML tool-call blocks, allowlists registered tools, validates parameters against each Pydantic tool schema, and converts valid calls into LangChain AIMessage.tool_calls | Added; GitHub only; not deployed |\n| source/app/graph/chat.py | Normalizes model responses before returning them to LangGraph conditional ToolNode dispatch | Updated; GitHub only; not deployed |\n| source/tests/test_chat_graph.py | Parser and graph-cycle tests for valid/multiple calls, malformed or unregistered calls, schema validation, and ToolNode execution | Updated; not run in DGX virtual environment |\n\nInvalid, incomplete, unknown-tool, unknown-parameter, duplicate-parameter, or mixed-prose markup is not executed. ToolNode remains the only execution path.\n
+
+## Agent streaming tool-call fix — 2026-11-04
+
+| Repository path | Purpose | Status |
+|---|---|---|
+| source/app/api/routes.py | Streams completed LangGraph assistant-node updates instead of raw message chunks; suppresses tool-call messages and unparsed Qwen tool markup from user-facing output | Updated in GitHub only; not synchronized or deployed |
+| source/tests/test_chat_graph.py | Regression coverage for emitting final assistant text, ignoring tool-node updates, and suppressing structured tool-call messages | Updated in GitHub only; not yet executed |
