@@ -191,3 +191,20 @@ These changes are canonical GitHub snapshots only. They have not been synchroniz
 | deployment/control-center.md | Documented the new UI/API scope and deployment status |
 
 GitHub source only; host deployment remains pending explicit approval.
+
+
+## Agent tool-calling and response-quality implementation — 2026-11-04 (GitHub only)
+
+| Repository path | Purpose | Status |
+|---|---|---|
+| source/app/tools/web.py | Tavily-backed live web search and public-page extraction tools | Added; requires TAVILY_API_KEY |
+| source/app/tools/__init__.py | Tools package initializer | Added |
+| source/app/graph/chat.py | LangGraph assistant → ToolNode → assistant execution cycle; explicit web/no-web behavior | Updated |
+| source/app/api/routes.py | Checkpoint-aware handling of Open WebUI full-history requests; system instructions kept out of persisted conversation messages | Updated |
+| source/app/providers/dynamo.py | Qwen reasoning configurable and enabled by default | Updated |
+| source/app/config/settings.py | ENABLE_THINKING, TAVILY_API_KEY, WEB_SEARCH_MAX_RESULTS | Updated |
+| source/app/main.py | Passes application settings into graph construction | Updated |
+| deployment/compose.vision38.yaml | Adds Dynamo Qwen3.8 tool-call and reasoning parsers | Updated; worker restart not performed |
+| deployment/agent.env.example | Documents new non-secret settings and empty API-key placeholder | Updated |
+
+These are canonical GitHub source/configuration changes only. They have not been synchronized to the DGX host, installed, syntax-checked in the production virtual environment, or deployed. No production database, checkpointer data, Agent service, Dynamo worker, container, model, or Control Center runtime was changed.
