@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     dynamo_api_key: SecretStr = SecretStr("not-needed")
     dynamo_timeout: int = Field(default=180, gt=0)
     enable_thinking: bool = True
-    tavily_api_key: SecretStr | None = None
+    searxng_base_url: str = "http://127.0.0.1:8888"
     web_search_max_results: int = Field(default=5, ge=1, le=8)
     admin_api_key: SecretStr | None = None
 
