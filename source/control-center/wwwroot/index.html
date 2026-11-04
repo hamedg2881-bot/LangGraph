@@ -38,6 +38,7 @@ button,select{font:inherit;border:1px solid #405777;border-radius:9px;padding:8p
  <button class="active" data-page="overview">نمای کلی</button>
  <button data-page="registry">فهرست مدل‌ها</button>
  <button data-page="runtime">Runtime و Workerها</button>
+ <button data-page="requests">صف درخواست‌ها</button>
  <button data-page="resources">منابع و تاریخچه</button>
  <button data-page="events">رویدادها</button>
 </nav>
@@ -51,6 +52,19 @@ button,select{font:inherit;border:1px solid #405777;border-radius:9px;padding:8p
 
 <section class="page" id="page-registry">
  <div class="toolbar"><div><h2>Model Registry</h2><div class="note small">منبع حقیقت برای تأیید، فعال‌بودن و قابلیت‌های هر مدل</div></div><div><button id="registry-sync">کشف مدل‌ها از Dynamo</button> <button id="registry-refresh">بارگذاری مجدد</button></div></div>
+ <section class="panel" style="margin-bottom:14px">
+  <div class="toolbar"><h3>ثبت دستی مدل</h3><span class="note small">ثبت metadata؛ هیچ مدلی دانلود یا بارگذاری نمی‌شود.</span></div>
+  <form id="model-register-form" class="grid" style="margin:0">
+   <input id="new-model-id" required maxlength="200" placeholder="شناسه مدل در Dynamo">
+   <input id="new-model-name" required maxlength="200" placeholder="نام نمایشی">
+   <input id="new-model-provider" value="nvidia-dynamo" placeholder="Provider">
+   <input id="new-model-architecture" placeholder="معماری">
+   <input id="new-model-quantization" placeholder="Quantization">
+   <input id="new-model-context" type="number" min="1" placeholder="Context Length">
+   <input id="new-model-capabilities" value="chat" placeholder="قابلیت‌ها: chat, vision, coding, reasoning, tool_calling">
+   <button type="submit">ثبت در Registry</button>
+  </form>
+ </section>
  <div class="toolbar">
   <input id="registry-search" type="search" placeholder="جست‌وجوی شناسه، نام یا Provider">
   <select id="registry-filter"><option value="all">همه وضعیت‌ها</option><option value="pending">در انتظار تأیید</option><option value="approved">تأییدشده</option><option value="rejected">ردشده</option><option value="selectable">قابل انتخاب</option><option value="unavailable">Runtime ناموجود</option></select>
@@ -64,6 +78,14 @@ button,select{font:inherit;border:1px solid #405777;border-radius:9px;padding:8p
  <h2>Runtime و Workerها</h2><p class="note small">وضعیت کانتینرها از Docker و مدل‌های سرو‌شده از endpoint واقعی Dynamo خوانده می‌شود. وضعیت کانتینر به‌تنهایی تضمین‌کننده آماده‌بودن inference نیست.</p>
  <div class="tiles" id="runtime"><div class="empty">در حال دریافت وضعیت Runtime…</div></div>
  <section class="panel" style="margin-top:14px"><h3>مدل منطقی Agent</h3><div id="logical-models" class="note">—</div><h3 style="margin-top:12px">مدل‌های کشف‌شده در Dynamo</h3><div id="dynamo-models" class="note">—</div></section>
+</section>
+
+<section class="page" id="page-requests">
+ <div class="toolbar"><div><h2>مدیریت درخواست‌های مدل</h2><div class="note small">وضعیت صف پایدار و Leaseهای اجرای inference از Model Manager</div></div><button id="queue-refresh">به‌روزرسانی</button></div>
+ <div class="grid" id="queue-metrics"><div class="empty">در حال دریافت وضعیت صف…</div></div>
+ <section class="panel"><h3>درخواست‌های منتظر</h3><div class="table-wrap"><table><thead><tr><th>شناسه درخواست</th><th>مدل</th><th>اولویت</th><th>زمان ثبت</th><th>عملیات</th></tr></thead><tbody id="queue-rows"><tr><td colspan="5" class="empty">در انتظار داده…</td></tr></tbody></table></div></section>
+ <section class="panel" style="margin-top:14px"><h3>Leaseهای فعال به تفکیک مدل</h3><div id="lease-summary" class="tiles"><div class="empty">—</div></div></section>
+ <div id="queue-note" class="note small" style="margin-top:10px">—</div>
 </section>
 
 <section class="page" id="page-resources">
@@ -89,7 +111,7 @@ const $=id=>document.getElementById(id);
 let latestStatus=null, registryItems=[], cachedEvents=[];
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=(v,s='')=>v===null||v===undefined?'نامشخص':v+s;
-const cls=v=>['ok','running','approved','true'].includes(String(v).toLowerCase())?'ok':['unknown','pending','timeout','unreachable'].includes(String(v).toLowerCase())?'warn':'bad';
+const cls=v=>['ok','running','approved','available','selectable','true'].includes(String(v).toLowerCase())?'ok':['unknown','pending','timeout','unreachable'].includes(String(v).toLowerCase())?'warn':'bad';
 function card(title,status,detail){return '<article class="tile"><div class="toolbar"><h3>'+esc(title)+'</h3><span class="pill '+cls(status)+'">'+esc(status||'نامشخص')+'</span></div><p class="note small">'+esc(detail||'')+'</p></article>'}
 function metric(title,value,note){return '<article class="metric"><div class="muted">'+esc(title)+'</div><div class="value">'+esc(value)+'</div><div class="sub">'+esc(note||'')+'</div></article>'}
 function renderMetrics(r,target){
@@ -155,6 +177,28 @@ async function syncRegistry(){
  catch(e){$('registry-note').textContent='خطا در کشف مدل‌ها: '+e.message}
  finally{b.disabled=false}
 }
+$('model-register-form').addEventListener('submit',async e=>{
+ e.preventDefault();
+ const button=e.currentTarget.querySelector('button[type="submit"]');button.disabled=true;
+ try{
+  const contextRaw=$('new-model-context').value.trim();
+  const context_length=contextRaw===''?null:Number(contextRaw);
+  if(context_length!==null&&(!Number.isSafeInteger(context_length)||context_length<1))throw new Error('Context Length نامعتبر است.');
+  const capabilities=$('new-model-capabilities').value.split(',').map(x=>x.trim()).filter(Boolean);
+  const result=await registryAction('', 'POST',{
+   id:$('new-model-id').value.trim(),
+   display_name:$('new-model-name').value.trim(),
+   provider:$('new-model-provider').value.trim()||'nvidia-dynamo',
+   architecture:$('new-model-architecture').value.trim()||null,
+   quantization:$('new-model-quantization').value.trim()||null,
+   context_length,capabilities
+  });
+  $('registry-note').textContent='مدل ثبت شد و در وضعیت Pending قرار گرفت: '+result.id;
+  e.currentTarget.reset();$('new-model-provider').value='nvidia-dynamo';$('new-model-capabilities').value='chat';
+  await loadRegistry();
+ }catch(err){$('registry-note').textContent='خطا در ثبت مدل: '+err.message}
+ finally{button.disabled=false}
+});
 $('registry-rows').addEventListener('click',e=>{const b=e.target.closest('[data-model-action]');if(b)runModelAction(b.dataset.modelAction,b.dataset.id)});
 async function loadRegistry(){
  $('registry-refresh').disabled=true;$('registry-note').textContent='در حال دریافت Registry…';
@@ -163,6 +207,40 @@ async function loadRegistry(){
  }catch(e){$('registry-note').textContent='Registry در دسترس نیست: '+e.message;$('registry-rows').innerHTML='<tr><td colspan="9" class="empty">'+esc(e.message)+'</td></tr>'}
  finally{$('registry-refresh').disabled=false}
 }
+async function loadQueue(){
+ $('queue-refresh').disabled=true;
+ try{
+  const r=await fetch('/api/model-manager/status',{cache:'no-store'});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.detail||data.title||('HTTP '+r.status));
+  const counts=data.counts_24h||{},leases=data.active_leases||{},queued=data.queued||[];
+  const count=(state)=>counts[state]??0;
+  $('queue-metrics').innerHTML=
+   metric('در صف',queued.length,'نمایش حداکثر ۱۰۰ درخواست منتظر')+
+   metric('در حال اجرا',count('running'),'در ۲۴ ساعت اخیر')+
+   metric('تکمیل‌شده',count('completed'),'در ۲۴ ساعت اخیر')+
+   metric('نیازمند بررسی',count('reconciliation_required'),'Lease آزاد نشده؛ نیازمند تطبیق Runtime')+
+   metric('Lease منقضی‌نشده/تطبیق‌نشده',fmt(data.expired_unreconciled_leases, ' مورد'),'انقضا به‌تنهایی ظرفیت را آزاد نمی‌کند');
+  $('queue-rows').innerHTML=queued.map(q=>'<tr><td><code>'+esc(q.id)+'</code></td><td>'+esc(q.model_id)+'</td><td>'+esc(q.priority)+'</td><td>'+esc(q.created_at?new Date(q.created_at).toLocaleString('fa-IR'):'—')+'</td><td><button data-queue-cancel="'+esc(q.id)+'">لغو درخواست صف‌شده</button></td></tr>').join('')||'<tr><td colspan="5" class="empty">درخواستی در صف نیست.</td></tr>';
+  $('lease-summary').innerHTML=Object.entries(leases).map(([id,n])=>card(id,n+' Lease','ظرفیت اشغال‌شده')).join('')||'<div class="empty">Lease فعالی گزارش نشده است.</div>';
+  $('queue-note').textContent='آخرین دریافت: '+new Date().toLocaleString('fa-IR')+' · عملیات Load/Unload از این پنل ارائه نمی‌شود.';
+ }catch(e){
+  $('queue-note').textContent='Model Manager در دسترس نیست: '+e.message;
+  $('queue-rows').innerHTML='<tr><td colspan="5" class="empty">'+esc(e.message)+'</td></tr>';
+ }finally{$('queue-refresh').disabled=false}
+}
+$('queue-rows').addEventListener('click',async e=>{
+ const b=e.target.closest('[data-queue-cancel]');if(!b)return;
+ if(!confirm('درخواست صف‌شده لغو شود؟'))return;
+ b.disabled=true;
+ try{
+  const id=b.dataset.queueCancel;
+  const r=await fetch('/api/model-manager/queue/'+encodeURIComponent(id)+'/cancel',{method:'POST'});
+  const data=await r.json().catch(()=>({}));
+  if(!r.ok)throw new Error(data.detail||data.title||('HTTP '+r.status));
+  $('queue-note').textContent='درخواست صف‌شده لغو شد: '+id;await loadQueue();
+ }catch(err){$('queue-note').textContent='لغو درخواست انجام نشد: '+err.message;b.disabled=false}
+});
 async function refresh(){
  $('refresh').disabled=true;$('message').textContent='در حال به‌روزرسانی…';
  try{const r=await fetch('/api/status',{cache:'no-store'});if(!r.ok)throw new Error('HTTP '+r.status);
@@ -195,14 +273,14 @@ async function refreshEvents(){
  $('events').innerHTML=cachedEvents.slice().reverse().map(e=>'<article class="event"><div class="small muted">'+esc(e.timestamp?new Date(e.timestamp).toLocaleString('fa-IR'):'زمان نامشخص')+'</div><strong>'+esc(e.type)+'</strong><div>'+esc(e.service||'')+' '+esc(e.previousReadiness?e.previousReadiness+' ← '+e.readiness:(e.message||''))+'</div></article>').join('')||'<div class="empty">رویدادی ثبت نشده است.</div>';
  }catch(e){$('events').innerHTML='<div class="empty">خطا در دریافت رویدادها: '+esc(e.message)+'</div>'}
 }
-document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+b.dataset.page))}));
+document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+b.dataset.page));if(b.dataset.page==='resources')refreshHistory();if(b.dataset.page==='requests')loadQueue()}));
 document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>document.querySelector('[data-page="'+b.dataset.goto+'"]').click()));
-$('refresh').addEventListener('click',refresh);$('registry-refresh').addEventListener('click',loadRegistry);$('registry-sync').addEventListener('click',syncRegistry);$('events-refresh').addEventListener('click',refreshEvents);
+$('refresh').addEventListener('click',refresh);$('registry-refresh').addEventListener('click',loadRegistry);$('registry-sync').addEventListener('click',syncRegistry);$('events-refresh').addEventListener('click',refreshEvents);$('queue-refresh').addEventListener('click',loadQueue);
 $('history-range').addEventListener('change',refreshHistory);
 $('registry-search').addEventListener('input',()=>renderRegistry(registryItems));
 $('registry-filter').addEventListener('change',()=>renderRegistry(registryItems));
-$('refresh').click();loadRegistry();refreshHistory();refreshEvents();
-setInterval(refresh,15000);setInterval(loadRegistry,60000);setInterval(refreshHistory,60000);setInterval(refreshEvents,60000);
+$('refresh').click();loadRegistry();refreshHistory();refreshEvents();loadQueue();
+setInterval(refresh,15000);setInterval(loadRegistry,60000);setInterval(refreshHistory,60000);setInterval(refreshEvents,60000);setInterval(loadQueue,15000);
 window.addEventListener('resize',()=>refreshHistory());
 </script>
 </body>
