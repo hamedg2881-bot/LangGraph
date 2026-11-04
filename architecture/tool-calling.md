@@ -61,3 +61,10 @@ This first implementation assumes the same conversation thread is not reused for
 The SearXNG tool returns a machine-readable `ok` flag and explicit error category. A successful response also includes `result_count`; zero results are not evidence. The tool validates the response shape, keeps only HTTP(S) result URLs, removes duplicate URLs, bounds snippet length, and uses bounded connection/request timeouts.
 
 The General Assistant prompt requires live search for current/recent questions and explicit research requests. It must distinguish search errors and empty results from successful research, cite only URLs returned by SearXNG, and avoid claiming to have opened full pages when only snippets were retrieved. ToolNode converts execution exceptions into tool errors for the assistant to handle. These source changes are not deployed or runtime-verified.
+
+
+## Deterministic graph testability — 2026-11-04
+
+`build_chat_graph` accepts an optional model object for isolated tests. When supplied, that object is bound to the same registered tools and used for graph invocation; in production, when no model object is supplied, the graph constructs the request-selected Dynamo model from `model_id`. This prevents tests from accidentally making live inference calls.
+
+`source/tests/test_chat_graph.py` exercises a complete structured tool cycle with a fake model and deterministic tool: model tool call → LangGraph ToolNode execution → ToolMessage returned to model → final assistant message. The test is committed but is not yet run against the DGX virtual environment. It does not establish compatibility with the live Qwen parser or SearXNG service.
