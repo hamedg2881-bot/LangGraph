@@ -99,6 +99,8 @@ class WebIntentTests(unittest.TestCase):
         self.assertTrue(is_web_research_request("خبرهای مهم هوش مصنوعی در هفته اخیر را جست‌وجو کن"))
         self.assertTrue(is_web_research_request("Search for the latest AI news this week"))
         self.assertTrue(is_web_research_request("قیمت امروز بیت‌کوین چقدر است؟"))
+        self.assertTrue(is_web_research_request("Research recent developments in AI"))
+        self.assertTrue(is_web_research_request("درباره معماری مدل‌ها تحقیق کن"))
 
     def test_does_not_force_search_for_general_chat(self):
         self.assertFalse(is_web_research_request("سلام، حالت چطوره؟"))
