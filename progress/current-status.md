@@ -167,3 +167,18 @@ The user supplied complete host output for app/api/admin_routes.py, app/api/admi
 1. Review the new source for compile/runtime issues and verify the exact Dynamo frontend model-list path.
 2. Design protected Control Center administrator authentication and server-side secret injection before adding Registry write operations.
 3. After explicit approval, synchronize source to `/opt/ai/control-center`, build/publish, restart `dgx-control-center.service`, and verify health/status/Registry APIs.
+
+
+## 2026-11-04 — Control Center deployment and live API verification
+
+- User ran `dotnet build --no-restore` successfully after replacing the canonical Control Center `Program.cs` and `wwwroot/index.html` files from GitHub.
+- User ran `dotnet publish -c Release -o /opt/ai/control-center/publish`; publish succeeded.
+- With user execution, `dgx-control-center.service` was restarted and reported `active (running)`; `GET /api/health` returned status `ok`, application `DGX Spark Control Center`, version `2.0.0`.
+- Verified API responses: `/api/status`, `/api/ai-status`, `/api/registry/models`, `/api/history`, and `/api/events` all returned parseable JSON. Registry returned 2 models; history returned 1,442 samples; events returned 100 records; runtime listed 9 containers.
+- Latest `/api/status`: Agent health `ok`, Agent logical models [`Auto`]; Dynamo health `ok`, Dynamo models [`qwen-coder`, `qwen38-vl`].
+- Latest `/api/ai-status`: Agent health and model status `ok`; Agent exposes only `Auto`. Dynamo health `ok`.
+- Registry rows: `qwen38-vl` is approved/enabled/selectable with capabilities `chat, vision`, context 32768; `qwen-coder` is approved/enabled/selectable with capability `coding`, context 65536. Both report runtime_status `available`.
+- Runtime container inventory: running — `dynamo-etcd`, `dynamo-frontend`, `dynamo-nats`, `dynamo-vllm-coder`, `dynamo-vllm-vision38`, `langgraph-postgres`, `open-webui`; exited — legacy `dynamo-vllm` and `dynamo-vllm-vision`. Discovery intentionally includes stopped containers.
+- History event types in the returned 100-event window: 79 `service-readiness-changed`, 21 `runtime-readiness-changed`.
+- Registry `last_seen_at` for both models remains 2026-11-03 while current Dynamo discovery sees both models on 2026-11-04. This suggests the explicit Agent Registry sync endpoint has not run since the previous day; it is not evidence of runtime failure. The sync operation must be checked before changing code.
+- No additional model, worker, database, or Compose change was made during these read-only checks.
