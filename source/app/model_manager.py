@@ -3,6 +3,7 @@ import socket
 import uuid
 from contextlib import asynccontextmanager
 
+
 class ModelQueueTimeout(Exception):
     pass
 
@@ -13,13 +14,6 @@ class ModelQueueFull(Exception):
 
 class ModelRequestCancelled(Exception):
     pass
-
-
-class ModelLease:
-    def __init__(self, manager, request_id: str, model_id: str):
-        self.manager = manager
-        self.request_id = request_id
-        self.model_id = model_id
 
 
 class ModelManager:
@@ -73,30 +67,14 @@ class ModelManager:
                     "SELECT pg_advisory_xact_lock(hashtextextended(%s, 0))",
                     (model_id,),
                 )
-                await connection.execute(
-                    """
-                    DELETE FROM model_runtime_leases
-                    WHERE model_id = %s AND expires_at < NOW()
-                    """,
-                    (model_id,),
-                )
-                await connection.execute(
-                    """
-                    UPDATE model_runtime_requests
-                    SET state = 'failed', finished_at = NOW(),
-                        error_code = 'lease_expired'
-                    WHERE state = 'running' AND model_id = %s
-                      AND id NOT IN (SELECT request_id FROM model_runtime_leases)
-                    """,
-                    (model_id,),
-                )
+
                 cursor = await connection.execute(
                     """
                     SELECT id
                     FROM model_runtime_requests
                     WHERE state = 'queued' AND model_id = %s
                     ORDER BY priority DESC, created_at, id
-                    FOR UPDATE SKIP LOCKED
+                    FOR UPDATE
                     LIMIT 1
                     """,
                     (model_id,),
@@ -107,11 +85,21 @@ class ModelManager:
 
                 cursor = await connection.execute(
                     """
-                    SELECT COUNT(*)
-                    FROM model_runtime_leases
-                    WHERE model_id = %s AND expires_at >= NOW()
+                    SELECT
+                        (SELECT COUNT(*)
+                         FROM model_runtime_leases
+                         WHERE model_id = %s)
+                        +
+                        (SELECT COUNT(*)
+                         FROM model_runtime_requests r
+                         WHERE r.model_id = %s
+                           AND r.state = 'running'
+                           AND NOT EXISTS (
+                               SELECT 1 FROM model_runtime_leases l
+                               WHERE l.request_id = r.id
+                           ))
                     """,
-                    (model_id,),
+                    (model_id, model_id),
                 )
                 active = (await cursor.fetchone())[0]
                 if active >= self.max_active_per_model:
@@ -149,45 +137,73 @@ class ModelManager:
             return row is None or row[0] == "cancelled"
 
     async def _heartbeat(self, request_id: str):
+        delay = self.lease_seconds / 3
         while True:
-            await asyncio.sleep(self.lease_seconds / 3)
-            async with self.database.pool.connection() as connection:
-                cursor = await connection.execute(
-                    """
-                    UPDATE model_runtime_leases
-                    SET expires_at = NOW() + (%s * INTERVAL '1 second')
-                    WHERE request_id = %s AND owner = %s
-                    RETURNING request_id
-                    """,
-                    (self.lease_seconds, uuid.UUID(request_id), self.owner),
-                )
-                if await cursor.fetchone() is None:
-                    return
-                await connection.execute(
-                    """
-                    UPDATE model_runtime_requests
-                    SET heartbeat_at = NOW()
-                    WHERE id = %s AND state = 'running'
-                    """,
-                    (uuid.UUID(request_id),),
-                )
+            await asyncio.sleep(delay)
+            try:
+                async with self.database.pool.connection() as connection:
+                    async with connection.transaction():
+                        cursor = await connection.execute(
+                            """
+                            UPDATE model_runtime_leases
+                            SET expires_at = NOW() + (%s * INTERVAL '1 second')
+                            WHERE request_id = %s AND owner = %s
+                            RETURNING request_id
+                            """,
+                            (self.lease_seconds, uuid.UUID(request_id), self.owner),
+                        )
+                        if await cursor.fetchone() is None:
+                            return
+                        await connection.execute(
+                            """
+                            UPDATE model_runtime_requests
+                            SET heartbeat_at = NOW()
+                            WHERE id = %s AND state IN ('running', 'reconciliation_required')
+                            """,
+                            (uuid.UUID(request_id),),
+                        )
+                delay = self.lease_seconds / 3
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                # Lease expiry is informational only; it never frees capacity.
+                # Keep retrying while the invocation coroutine is still alive.
+                delay = min(max(delay * 2, 1.0), 30.0)
 
-    async def _finish(self, request_id: str, state: str, error_code: str | None = None):
+    async def _finish(self, request_id: str):
         async with self.database.pool.connection() as connection:
             async with connection.transaction():
+                cursor = await connection.execute(
+                    """
+                    UPDATE model_runtime_requests
+                    SET state = 'completed', finished_at = NOW(), error_code = NULL
+                    WHERE id = %s AND owner = %s AND state = 'running'
+                    RETURNING id
+                    """,
+                    (uuid.UUID(request_id), self.owner),
+                )
+                if await cursor.fetchone() is None:
+                    raise RuntimeError("Could not complete the owned model request")
                 await connection.execute(
                     "DELETE FROM model_runtime_leases WHERE request_id = %s AND owner = %s",
                     (uuid.UUID(request_id), self.owner),
                 )
+
+    async def _require_reconciliation(self, request_id: str, error_code: str):
+        # A failed or cancelled HTTP coroutine does not prove that remote
+        # inference has stopped. Retain the lease until runtime termination
+        # can be independently verified and explicitly reconciled.
+        async with self.database.pool.connection() as connection:
+            async with connection.transaction():
                 await connection.execute(
                     """
                     UPDATE model_runtime_requests
-                    SET state = %s, finished_at = NOW(), error_code = %s
+                    SET state = 'reconciliation_required',
+                        error_code = %s
                     WHERE id = %s AND owner = %s AND state = 'running'
                     """,
-                    (state, error_code, uuid.UUID(request_id), self.owner),
+                    (error_code, uuid.UUID(request_id), self.owner),
                 )
-
 
     async def cancel_request(self, request_id: str):
         async with self.database.pool.connection() as connection:
@@ -235,15 +251,15 @@ class ModelManager:
 
             heartbeat = asyncio.create_task(self._heartbeat(request_id))
             try:
-                yield ModelLease(self, request_id, model_id)
+                yield
             except asyncio.CancelledError:
-                await self._finish(request_id, "cancelled", "request_cancelled")
+                await self._require_reconciliation(request_id, "caller_cancelled_runtime_unverified")
                 raise
-            except Exception:
-                await self._finish(request_id, "failed", "inference_failed")
+            except BaseException:
+                await self._require_reconciliation(request_id, "inference_failed_runtime_unverified")
                 raise
             else:
-                await self._finish(request_id, "completed")
+                await self._finish(request_id)
             finally:
                 heartbeat.cancel()
                 try:
@@ -266,15 +282,25 @@ class ModelManager:
                 """
             )
             counts = {state: count for state, count in await cursor.fetchall()}
+
             cursor = await connection.execute(
                 """
                 SELECT model_id, COUNT(*)
                 FROM model_runtime_leases
-                WHERE expires_at >= NOW()
                 GROUP BY model_id
                 """
             )
             active = {model_id: count for model_id, count in await cursor.fetchall()}
+
+            cursor = await connection.execute(
+                """
+                SELECT COUNT(*)
+                FROM model_runtime_leases
+                WHERE expires_at < NOW()
+                """
+            )
+            expired_unreconciled = (await cursor.fetchone())[0]
+
             cursor = await connection.execute(
                 """
                 SELECT id, model_id, priority, created_at
@@ -285,8 +311,17 @@ class ModelManager:
                 """
             )
             queued = [
-                {"id": str(row[0]), "model_id": row[1], "priority": row[2],
-                 "created_at": row[3].isoformat()}
+                {
+                    "id": str(row[0]),
+                    "model_id": row[1],
+                    "priority": row[2],
+                    "created_at": row[3].isoformat(),
+                }
                 for row in await cursor.fetchall()
             ]
-            return {"counts_24h": counts, "active_leases": active, "queued": queued}
+            return {
+                "counts_24h": counts,
+                "active_leases": active,
+                "expired_unreconciled_leases": expired_unreconciled,
+                "queued": queued,
+            }
