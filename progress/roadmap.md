@@ -116,3 +116,22 @@ The four capabilities are one deliverable; do not ship isolated mock controls. F
 - [ ] Build/unit/integration/smoke tests, then one coordinated deployment after explicit user approval.
 
 Current hard gates: exact host source capture; Dynamo bare-metal lifecycle adapter validation; Control Center administrator authentication. No queue/lifecycle APIs or UI controls are implemented yet; no synthetic metrics are permitted.
+
+
+## 2026-11-04 implementation checkpoint
+
+Completed in GitHub source only:
+- Exact deployed Agent settings, Dynamo provider, and Registry schema snapshots captured from the host.
+- Manual metadata-only Registry registration endpoint (pending + disabled by default).
+- Durable request queue and renewable per-request leases, integrated with streaming and non-streaming chat execution.
+- Authenticated queue/status and queued-request cancellation endpoints.
+- Explicit HTTP 501 load/unload responses until a supported Dynamo Compose lifecycle adapter is proven.
+
+Remaining before deployment:
+1. Run Python compile/import checks and focused unit/integration tests against the exact installed dependency versions.
+2. Validate PostgreSQL UUID binding, advisory-lock concurrency, cancellation, streaming disconnect, lease heartbeat/recovery, and queue timeout under concurrent requests.
+3. Decide safe global/per-model admission limits using measured GB10 RAM/GPU memory and actual worker configuration; current default of 8 per model is provisional.
+4. Validate a supported Dynamo 1.6.1 bare-metal worker start/readiness/drain/removal mechanism; do not substitute Docker stop/start.
+5. Implement resource admission, load operations, drain-first eviction, desired/observed worker state, and GPU memory telemetry only after validation.
+6. Design authenticated Control Center admin sessions before exposing any Registry mutation or Model Manager actions in the browser.
+7. After source review and explicit user approval, synchronize files, apply additive schema via controlled Agent startup, and verify health/API behavior. No deployment is authorized by these GitHub commits.
