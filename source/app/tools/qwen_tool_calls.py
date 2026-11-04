@@ -6,8 +6,8 @@ from langchain_core.messages import AIMessage
 
 
 _TOOL_BLOCK = re.compile(
-    r"<tool_call>\\s*<function=([A-Za-z_][A-Za-z0-9_.-]*)>\\s*(.*?)"
-    r"\\s*</function>\\s*</tool_call>",
+    r"<tool_call>\s*<function=([A-Za-z_][A-Za-z0-9_.-]*)>\s*(.*?)"
+    r"\s*</function>\s*</tool_call>",
     re.DOTALL,
 )
 _PARAMETER = re.compile(
