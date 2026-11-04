@@ -16,6 +16,7 @@ This repository records the agreed architecture, implementation decisions, deplo
 
 - [Project context](PROJECT_CONTEXT.md)
 - [Architecture](architecture/overview.md)
+- [Unified model management architecture](architecture/model-management.md)
 - [Architecture decisions](architecture/decisions.md)
 - [Current status](progress/current-status.md)
 - [Roadmap](progress/roadmap.md)
