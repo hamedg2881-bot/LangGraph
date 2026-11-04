@@ -182,3 +182,18 @@ The user supplied complete host output for app/api/admin_routes.py, app/api/admi
 - History event types in the returned 100-event window: 79 `service-readiness-changed`, 21 `runtime-readiness-changed`.
 - Registry `last_seen_at` for both models remains 2026-11-03 while current Dynamo discovery sees both models on 2026-11-04. This suggests the explicit Agent Registry sync endpoint has not run since the previous day; it is not evidence of runtime failure. The sync operation must be checked before changing code.
 - No additional model, worker, database, or Compose change was made during these read-only checks.
+
+
+## 2026-11-04 — Control Center 2.0.0 deployment and Registry sync follow-up
+
+- User successfully ran the Release publish and restarted `dgx-control-center.service`; the service is active and `GET /api/health` returns status `ok`, version `2.0.0`.
+- All five API endpoints `/api/status`, `/api/ai-status`, `/api/registry/models`, `/api/history`, and `/api/events` returned parseable JSON.
+- Latest live status: Agent health `ok`, logical model `Auto`; Dynamo health `ok`, runtime models `qwen-coder` and `qwen38-vl`.
+- Registry contains two models. `qwen38-vl` is approved/enabled/selectable with `chat, vision` capabilities and context 32768; `qwen-coder` is approved/enabled/selectable with `coding` capability and context 65536.
+- Runtime discovery reports 9 containers: 7 running and 2 exited legacy containers (`dynamo-vllm`, `dynamo-vllm-vision`). Discovery includes stopped containers intentionally.
+- User executed authenticated `POST http://127.0.0.1:8100/admin/models/sync`; Agent returned `discovered_count: 2`. Registry `last_seen_at` for both models advanced to `2026-11-04T06:52:30.290923+00:00`; approval remained `approved`, runtime remained `available`.
+- The current Agent still has no queue/request lease or Model Manager API. The current Control Center still has no admin-session authentication and exposes Registry as read-only. Do not add anonymous mutation proxies.
+- The current Agent source snapshot in GitHub is incomplete for a safe implementation: settings/config package, graph/provider implementation, exact Registry schema file, and some runtime/config files are not all archived. Capture exact host source before modifying production Agent files.
+- Dynamo 1.6.1 documentation describes discovery and Planner control signals; the Operator reconciles desired worker counts in Kubernetes. This does not establish a supported bare-metal load/unload HTTP API for this Docker Compose deployment. Worker lifecycle adapter remains a hard implementation gate.
+- A unified implementation contract was added at `architecture/model-management.md`. It defines manual metadata-only registration, durable queue/leases, resource admission, drain-first eviction, lifecycle adapter validation, Control Center admin security, monitoring, tests, and deployment gates.
+- No host source, Agent service, database schema/data, worker/container, model, or Control Center runtime was changed during this documentation update.
