@@ -7,7 +7,7 @@ from langchain_core.tools import StructuredTool
 from langgraph.checkpoint.memory import MemorySaver
 
 from app.graph.chat import build_chat_graph
-from app.tools.web_intent import is_web_research_request
+from app.tools.web_intent import is_web_research_request\nfrom app.tools.qwen_tool_calls import parse_qwen_tool_calls
 
 
 def _fake_search_tool():
@@ -109,3 +109,124 @@ class WebIntentTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class QwenToolCallParsingTests(unittest.TestCase):
+    def test_converts_complete_registered_tool_call(self):
+        tool = _fake_search_tool()
+        message = AIMessage(
+            content=(
+                "<tool_call><function=web_search>"
+                "<parameter=query>AI news &amp; research</parameter>"
+                "</function></tool_call>"
+            )
+        )
+
+        parsed = parse_qwen_tool_calls(message, [tool])
+
+        self.assertEqual(parsed.content, "")
+        self.assertEqual(len(parsed.tool_calls), 1)
+        self.assertEqual(parsed.tool_calls[0]["name"], "web_search")
+        self.assertEqual(parsed.tool_calls[0]["args"], {"query": "AI news & research"})
+
+    def test_converts_multiple_calls(self):
+        tool = _fake_search_tool()
+        message = AIMessage(
+            content=(
+                "<tool_call><function=web_search>"
+                "<parameter=query>first search</parameter>"
+                "</function></tool_call>\n"
+                "<tool_call><function=web_search>"
+                "<parameter=query>second search</parameter>"
+                "</function></tool_call>"
+            )
+        )
+
+        parsed = parse_qwen_tool_calls(message, [tool])
+
+        self.assertEqual(len(parsed.tool_calls), 2)
+        self.assertEqual(
+            [call["args"]["query"] for call in parsed.tool_calls],
+            ["first search", "second search"],
+        )
+
+    def test_rejects_unknown_tool_unknown_parameter_and_malformed_markup(self):
+        tool = _fake_search_tool()
+        cases = [
+            "<tool_call><function=delete_all><parameter=query>test</parameter></function></tool_call>",
+            "<tool_call><function=web_search><parameter=command>test</parameter></function></tool_call>",
+            "<tool_call><function=web_search><parameter=query>test</function></tool_call>",
+            "Do this: <tool_call><function=web_search><parameter=query>test</parameter></function></tool_call>",
+        ]
+
+        for content in cases:
+            with self.subTest(content=content):
+                message = AIMessage(content=content)
+                self.assertIs(parse_qwen_tool_calls(message, [tool]), message)
+
+    def test_rejects_arguments_that_fail_tool_schema_validation(self):
+        tool = _fake_search_tool()
+        message = AIMessage(
+            content=(
+                "<tool_call><function=web_search>"
+                "<parameter=query>x</parameter>"
+                "</function></tool_call>"
+            )
+        )
+
+        self.assertIs(parse_qwen_tool_calls(message, [tool]), message)
+
+
+class FakeQwenXmlToolCallingModel(FakeToolCallingModel):
+    async def ainvoke(self, messages, config=None):
+        self.calls.append(messages)
+        if len(self.calls) == 1:
+            return AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "web_search",
+                        "args": {"query": "first search"},
+                        "id": "call-initial",
+                        "type": "tool_call",
+                    }
+                ],
+            )
+        tool_messages = [message for message in messages if isinstance(message, ToolMessage)]
+        if len(tool_messages) == 1:
+            return AIMessage(
+                content=(
+                    "<tool_call><function=web_search>"
+                    "<parameter=query>second search</parameter>"
+                    "</function></tool_call>"
+                )
+            )
+        if len(tool_messages) == 2:
+            return AIMessage(content="پاسخ نهایی")
+        raise AssertionError("Unexpected model invocation")
+
+
+class ChatGraphQwenXmlCompatibilityTests(unittest.IsolatedAsyncioTestCase):
+    async def test_xml_tool_call_is_normalized_and_executed_by_tool_node(self):
+        model = FakeQwenXmlToolCallingModel()
+        settings = SimpleNamespace(
+            searxng_base_url="http://127.0.0.1:8888",
+            web_search_max_results=5,
+        )
+        with patch("app.graph.chat.build_web_tools", return_value=[_fake_search_tool()]):
+            graph = build_chat_graph(MemorySaver(), model=model, settings=settings)
+            result = await graph.ainvoke(
+                {"messages": [HumanMessage(content="Search the web for current AI news")]},
+                config={
+                    "recursion_limit": 10,
+                    "configurable": {"thread_id": "qwen-xml-tool-cycle"},
+                },
+            )
+
+        self.assertEqual(result["messages"][-1].content, "پاسخ نهایی")
+        self.assertEqual(model.tool_choices, ["required", "auto", "auto"])
+        tool_results = [
+            message.content for message in result["messages"]
+            if isinstance(message, ToolMessage)
+        ]
+        self.assertEqual(tool_results, ["search-result:first search", "search-result:second search"])
