@@ -301,3 +301,5 @@ The user explicitly confirmed that the Agent must be very complete and versatile
 - Added `source/tests/test_chat_graph.py`: a deterministic async regression test that emits a structured `web_search` tool call, verifies ToolNode execution, verifies the resulting ToolMessage is passed back to the assistant, and checks the final answer.
 - The test is committed but has not been executed in the DGX virtual environment. No dependency assumptions or runtime compatibility are marked verified.
 - No host source, service, SearXNG, Dynamo worker, model, or database was changed.
+
+- Added `source/tests/test_web_search.py` with deterministic tests for URL filtering/deduplication, result limiting, JSON request format, and invalid SearXNG response handling. These tests are committed but not executed against the installed DGX environment.
