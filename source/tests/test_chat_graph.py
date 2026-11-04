@@ -7,7 +7,9 @@ from langchain_core.tools import StructuredTool
 from langgraph.checkpoint.memory import MemorySaver
 
 from app.graph.chat import build_chat_graph
-from app.tools.web_intent import is_web_research_request\nfrom app.tools.qwen_tool_calls import parse_qwen_tool_calls\nfrom app.tools.web import WebSearchArgs
+from app.tools.web_intent import is_web_research_request
+from app.tools.qwen_tool_calls import parse_qwen_tool_calls
+from app.tools.web import WebSearchArgs
 
 
 def _fake_search_tool():
