@@ -180,3 +180,14 @@ The queue implementation also enforces configurable per-model queue backpressure
 | source/app/registry/schema.sql | Add reconciliation_required request state with repeatable constraint update | Updated |
 
 These changes are canonical GitHub snapshots only. They have not been synchronized to the DGX host or applied to the live PostgreSQL database.
+
+
+## Control Center UI / Model Manager update — 2026-11-04
+
+| Repository path | Update |
+|---|---|
+| source/control-center/Program.cs | Added server-side Model Manager status and queued-cancel proxy endpoints |
+| source/control-center/wwwroot/index.html | Added manual Registry registration, request queue/lease dashboard, queued-only cancellation, corrected available-state styling, and visible-tab chart refresh |
+| deployment/control-center.md | Documented the new UI/API scope and deployment status |
+
+GitHub source only; host deployment remains pending explicit approval.
