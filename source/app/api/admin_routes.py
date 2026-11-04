@@ -12,6 +12,12 @@ router = APIRouter(
     dependencies=[Depends(require_admin)],
 )
 
+model_manager_router = APIRouter(
+    prefix="/admin/model-manager",
+    tags=["Model Manager"],
+    dependencies=[Depends(require_admin)],
+)
+
 
 class ModelRegistration(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -270,3 +276,57 @@ async def model_status(model_id: str, request: Request):
             and runtime_status == "available"
         ),
     }
+
+
+@model_manager_router.get("/status")
+async def model_manager_status(request: Request):
+    queue = await request.app.state.model_manager.snapshot()
+    return {
+        **queue,
+        "worker_lifecycle": {
+            "supported": False,
+            "adapter": "dynamo-compose",
+            "reason": (
+                "A supported graceful load/drain/unload control surface has not "
+                "been validated for this bare-metal Dynamo 1.6.1 Compose deployment."
+            ),
+        },
+    }
+
+
+@model_manager_router.get("/queue")
+async def model_manager_queue(request: Request):
+    return await request.app.state.model_manager.snapshot()
+
+
+@model_manager_router.post("/models/{model_id}/load", status_code=501)
+async def load_model_not_supported(model_id: str):
+    raise HTTPException(
+        status_code=501,
+        detail=(
+            "Worker lifecycle is unavailable: the deployed Dynamo Compose "
+            "lifecycle adapter has not been validated. No container was started."
+        ),
+    )
+
+
+@model_manager_router.post("/models/{model_id}/unload", status_code=501)
+async def unload_model_not_supported(model_id: str):
+    raise HTTPException(
+        status_code=501,
+        detail=(
+            "Worker lifecycle is unavailable: graceful drain and unload are not "
+            "validated. No active inference or container was interrupted."
+        ),
+    )
+
+
+@model_manager_router.post("/queue/{request_id}/cancel")
+async def cancel_queued_request(request_id: str, request: Request):
+    cancelled = await request.app.state.model_manager.cancel_queued(request_id)
+    if not cancelled:
+        raise HTTPException(
+            status_code=409,
+            detail="Request is not queued or cannot be cancelled safely",
+        )
+    return {"id": request_id, "state": "cancelled"}
