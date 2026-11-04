@@ -137,3 +137,15 @@ These are GitHub source changes only. No host files, environment variables, buil
 | architecture/model-management.md | Integrated contract for Registry, durable queue/leases, residency, Dynamo worker lifecycle adapter, Control Center security, monitoring, and deployment gates | Design documented; implementation pending |
 
 The current Agent and Control Center source snapshots do not yet contain Model Manager APIs, durable queue/lease tables, manual Registry registration, or admin-session authentication. Do not mark these as implemented until exact source files, additive migrations, tests, and host verification are complete.
+
+## Agent runtime source snapshots — captured 2026-11-04
+
+The following files were supplied from the live host at `/opt/ai/langgraph-agent` and committed byte-for-byte as UTF-8 source snapshots:
+
+| Host path | Purpose | Canonical repository snapshot |
+|---|---|---|
+| app/config/settings.py | Pydantic settings and secret-backed environment configuration | source/app/config/settings.py |
+| app/providers/dynamo.py | LangChain OpenAI-compatible Dynamo model factory | source/app/providers/dynamo.py |
+| app/registry/schema.sql | Existing PostgreSQL model Registry schema | source/app/registry/schema.sql |
+
+The live `config/agent.env` was not read, copied, or committed. These snapshots complete the missing runtime/config/schema source files needed to reason about the installed Agent. They do not represent a deployment or service restart.
