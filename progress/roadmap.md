@@ -152,3 +152,13 @@ Required capability tracks:
 7. Product acceptance: test meaningful end-to-end tasks through Open WebUI → Auto → Agent → tools/models, including failures. Do not mark a capability complete based only on source implementation or a successful health endpoint.
 
 Keep the existing central General Assistant architecture. Do not add a separate Coding Agent by default. Preserve production state and obtain explicit approval before deployment or service/worker restarts. See `architecture/assistant-quality.md` for the full acceptance contract.
+
+
+### Tool orchestration hardening — 2026-11-04
+- [x] Improve General Assistant task-completion, multilingual/Persian RTL, safe-default, and truthful-action system instructions.
+- [x] Strengthen live-search policy and source-grounding requirements.
+- [x] Add SearXNG timeout/error classification, response validation, safe URL filtering, deduplication, and bounded snippets.
+- [x] Keep structured LangGraph ToolNode execution and handle tool exceptions as model-visible tool errors.
+- [ ] Run compile/import and focused tool tests against the exact host dependency versions.
+- [ ] Verify Qwen3.8-VL emits compatible structured tool calls through the active Dynamo parser.
+- [ ] Verify SearXNG JSON output and Persian research end-to-end after explicit deployment approval.
