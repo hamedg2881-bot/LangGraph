@@ -103,3 +103,15 @@
 - Updated resource history sampling to track runtime readiness transitions.
 - Intentionally withheld Registry mutation routes pending Control Center administrator authentication. Retained HTTP 410 for legacy profile switching and did not add worker lifecycle/queue controls.
 - GitHub source changes only; no host files, service environment, build, publish, restart, containers, database, or models were changed. Build/runtime verification remains pending.
+
+
+## 2026-11-04 — Control Center deployed and verified on DGX Spark
+
+- User successfully built and published the updated .NET 10 Control Center, then restarted `dgx-control-center.service`.
+- Service is active; `GET /api/health` returned `ok` with application version `2.0.0`.
+- Verified parseable responses from status, AI status, Registry, history, and events APIs.
+- Agent exposes logical `Auto`; Dynamo discovers `qwen-coder` and `qwen38-vl`.
+- Registry reports both models approved, enabled, runtime-available, and selectable; capabilities are coding for Coder and chat/vision for Vision38.
+- Runtime discovery reports seven running containers and two exited legacy containers.
+- Noted stale Registry `last_seen_at` timestamps (2026-11-03) despite current Dynamo discovery; investigate explicit Registry sync before any source changes.
+- No model lifecycle, Compose, or database mutation was performed by the verification tests.
