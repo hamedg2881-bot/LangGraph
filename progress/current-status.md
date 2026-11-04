@@ -303,3 +303,20 @@ The user explicitly confirmed that the Agent must be very complete and versatile
 - No host source, service, SearXNG, Dynamo worker, model, or database was changed.
 
 - Added `source/tests/test_web_search.py` with deterministic tests for URL filtering/deduplication, result limiting, JSON request format, and invalid SearXNG response handling. These tests are committed but not executed against the installed DGX environment.
+
+## 2026-11-04 — Deterministic General Assistant web routing (GitHub only)
+
+The live Agent test exposed that the model could answer an explicit Persian web-research request without invoking SearXNG. Direct Dynamo testing further showed structured tool calls with `tool_choice=required` and thinking disabled, but textual `<tool_call>` markup with `auto + thinking=true`. A `required + thinking=true` request remained active for approximately 170 seconds and was cancelled by the client timeout.
+
+Implemented in the canonical source:
+- Added `source/app/tools/web_intent.py` to detect explicit/current web-research intent in Persian and English.
+- Updated `source/app/graph/chat.py` to force `tool_choice="required"` on the first assistant response to a research turn, then return to `auto` after a ToolMessage so the assistant can synthesize results or continue searching.
+- Updated `source/app/providers/dynamo.py` to support a per-request thinking override. Research turns disable thinking only for the research request; ordinary chat retains the configured default.
+- Added server-local runtime date/time to the system prompt to prevent fabricated current dates.
+- Expanded `source/tests/test_chat_graph.py` to cover intent detection, forced tool routing, normal-chat auto behavior, the ToolNode cycle, and runtime date context.
+
+Verification boundary:
+- These are GitHub source changes only. They have not been copied to the DGX host, compiled, or run in its virtual environment.
+- The deterministic tests use a fake model and prove Agent routing/ToolNode behavior, not live Qwen/Dynamo parser compatibility.
+- No Agent service, worker, container, model, database, checkpointer, or host configuration was changed.
+- The next acceptance test is the focused unit suite on the DGX host, followed by one bounded end-to-end Persian research request through `Auto`.
