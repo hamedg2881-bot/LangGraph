@@ -179,3 +179,10 @@
 - Kept structured LangGraph tool execution and enabled ToolNode error handling.
 - Updated source inventory, tool-calling architecture, current status, and roadmap.
 - GitHub-only source/documentation changes. No host deployment, service restart, SearXNG configuration, database, worker, or model changes were performed. Runtime verification remains pending.
+
+
+## 2026-11-04 — Deterministic tool-cycle testability
+
+- Fixed the unused `model` injection parameter in `build_chat_graph`; tests can now provide a deterministic model, while production continues to resolve the request-selected Dynamo model ID.
+- Added an async regression test for structured tool-call parsing, ToolNode execution, returning the tool result to the assistant, and producing a final response.
+- GitHub-only source/test change. Test execution and runtime Qwen/Dynamo tool-parser compatibility remain pending; no host deployment or service restart was performed.
