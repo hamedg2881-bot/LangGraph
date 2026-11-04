@@ -7,6 +7,7 @@ from fastapi.responses import StreamingResponse
 
 from app.api.schemas import ChatCompletionRequest, ModelList, ModelObject
 from app.model_selector import ModelSelectionError, select_model
+from app.model_manager import ModelQueueTimeout
 
 router = APIRouter(prefix="/v1")
 
@@ -83,7 +84,11 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
                 return f"data: {json.dumps(data, ensure_ascii=False)}\n\n"
 
             try:
-                yield sse({
+                async with request.app.state.model_manager.lease(
+                    selected_model_id,
+                    timeout_seconds=request.app.state.settings.model_queue_timeout,
+                ):
+                    yield sse({
                     "id": completion_id,
                     "object": "chat.completion.chunk",
                     "created": created,
@@ -95,28 +100,28 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
                     }],
                 })
 
-                async for chunk, metadata in request.app.state.graph.astream(
-                    {"messages": messages},
-                    config=config,
-                    stream_mode="messages",
-                ):
-                    if metadata.get("langgraph_node") != "assistant":
-                        continue
+                    async for chunk, metadata in request.app.state.graph.astream(
+                        {"messages": messages},
+                        config=config,
+                        stream_mode="messages",
+                    ):
+                        if metadata.get("langgraph_node") != "assistant":
+                            continue
 
-                    content = chunk.content
+                        content = chunk.content
 
-                    if isinstance(content, str) and content:
-                        yield sse({
-                            "id": completion_id,
-                            "object": "chat.completion.chunk",
-                            "created": created,
-                            "model": payload.model,
-                            "choices": [{
-                                "index": 0,
-                                "delta": {"content": content},
-                                "finish_reason": None,
-                            }],
-                        })
+                        if isinstance(content, str) and content:
+                            yield sse({
+                                "id": completion_id,
+                                "object": "chat.completion.chunk",
+                                "created": created,
+                                "model": payload.model,
+                                "choices": [{
+                                    "index": 0,
+                                    "delta": {"content": content},
+                                    "finish_reason": None,
+                                }],
+                            })
 
                 yield sse({
                     "id": completion_id,
@@ -152,10 +157,14 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
         )
 
     try:
-        result = await request.app.state.graph.ainvoke(
-            {"messages": messages},
-            config=config,
-        )
+        async with request.app.state.model_manager.lease(
+            selected_model_id,
+            timeout_seconds=request.app.state.settings.model_queue_timeout,
+        ):
+            result = await request.app.state.graph.ainvoke(
+                {"messages": messages},
+                config=config,
+            )
 
         answer = result["messages"][-1]
         usage = answer.usage_metadata or {}
@@ -180,6 +189,8 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
             },
         }
 
+    except ModelQueueTimeout as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
     except Exception as exc:
         raise HTTPException(
             status_code=502,
