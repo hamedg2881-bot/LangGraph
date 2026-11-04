@@ -258,3 +258,14 @@ Deployment gates:
 - The Vision38 worker must be recreated with the updated Compose arguments before Qwen3.8 tool calls and reasoning parsing can work. This is not yet performed.
 - The Agent's streaming/non-streaming tool cycle, checkpoint continuity, model tool-call parsing, and end-to-end search must be verified after deployment.
 - Existing PostgreSQL checkpointer data and Model Manager tables must be preserved; no database reset or migration is part of this change.
+
+
+## 2026-11-04 — Switch live web search provider to SearXNG
+
+- User selected the already deployed SearXNG instance instead of Tavily.
+- Agent configuration now uses `SEARXNG_BASE_URL`, defaulting to host-local `http://127.0.0.1:8888`; no API key is required.
+- Replaced the Tavily search/extract implementation with a SearXNG `/search` JSON API tool. SearXNG provides search results/snippets; Tavily-specific page extraction has been removed.
+- The Agent still uses the LangGraph ToolNode execution cycle and must cite actual URLs returned by search.
+- SearXNG JSON output must be enabled in its settings (`search.formats` includes `json`). This has not yet been checked on the host.
+- All changes are GitHub-only. No Agent environment, host source, SearXNG configuration, container, service, or database was changed or restarted.
+- Runtime verification of SearXNG JSON output, Agent tool execution, Dynamo tool-call parsing, and end-to-end Persian search remains pending.
