@@ -107,8 +107,6 @@ class WebIntentTests(unittest.TestCase):
         self.assertFalse(is_web_research_request("Explain how a neural network works"))
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class QwenToolCallParsingTests(unittest.TestCase):
@@ -230,3 +228,6 @@ class ChatGraphQwenXmlCompatibilityTests(unittest.IsolatedAsyncioTestCase):
             if isinstance(message, ToolMessage)
         ]
         self.assertEqual(tool_results, ["search-result:first search", "search-result:second search"])
+
+if __name__ == "__main__":
+    unittest.main()
