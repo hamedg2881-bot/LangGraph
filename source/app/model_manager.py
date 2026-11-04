@@ -3,9 +3,6 @@ import socket
 import uuid
 from contextlib import asynccontextmanager
 
-from psycopg.types.json import Jsonb
-
-
 class ModelQueueTimeout(Exception):
     pass
 
@@ -61,9 +58,10 @@ class ModelManager:
                     UPDATE model_runtime_requests
                     SET state = 'failed', finished_at = NOW(),
                         error_code = 'lease_expired'
-                    WHERE state = 'running'
+                    WHERE state = 'running' AND model_id = %s
                       AND id NOT IN (SELECT request_id FROM model_runtime_leases)
-                    """
+                    """,
+                    (model_id,),
                 )
                 cursor = await connection.execute(
                     """
