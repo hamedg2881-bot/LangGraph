@@ -54,3 +54,10 @@ This first implementation assumes the same conversation thread is not reused for
 - These changes are GitHub-only until explicitly synchronized and deployed.
 - Verify that SearXNG JSON output is enabled and reachable from the Agent host before declaring live web search operational.
 - Verify Dynamo parser arguments and structured tool-call output before declaring tool calling operational.
+
+
+## Reliability and answer grounding — 2026-11-04
+
+The SearXNG tool returns a machine-readable `ok` flag and explicit error category. A successful response also includes `result_count`; zero results are not evidence. The tool validates the response shape, keeps only HTTP(S) result URLs, removes duplicate URLs, bounds snippet length, and uses bounded connection/request timeouts.
+
+The General Assistant prompt requires live search for current/recent questions and explicit research requests. It must distinguish search errors and empty results from successful research, cite only URLs returned by SearXNG, and avoid claiming to have opened full pages when only snippets were retrieved. ToolNode converts execution exceptions into tool errors for the assistant to handle. These source changes are not deployed or runtime-verified.
