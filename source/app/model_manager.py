@@ -154,14 +154,16 @@ class ModelManager:
 
     async def cancel_queued(self, request_id: str):
         async with self.database.pool.connection() as connection:
-            await connection.execute(
+            cursor = await connection.execute(
                 """
                 UPDATE model_runtime_requests
                 SET state = 'cancelled', finished_at = NOW()
                 WHERE id = %s AND owner = %s AND state = 'queued'
+                RETURNING id
                 """,
                 (request_id, self.owner),
             )
+            return await cursor.fetchone() is not None
 
     @asynccontextmanager
     async def lease(self, model_id: str, timeout_seconds: int = 600, priority: int = 0):
