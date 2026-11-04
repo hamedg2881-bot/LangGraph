@@ -12,6 +12,32 @@ from app.model_manager import ModelQueueFull, ModelQueueTimeout, ModelRequestCan
 router = APIRouter(prefix="/v1")
 
 
+def _assistant_text_from_update(update):
+    """Return only completed user-facing assistant text from a LangGraph update."""
+    if not isinstance(update, dict):
+        return []
+    assistant_update = update.get("assistant")
+    if not isinstance(assistant_update, dict):
+        return []
+    messages = assistant_update.get("messages", [])
+    if not isinstance(messages, (list, tuple)):
+        messages = [messages]
+    output = []
+    for message in messages:
+        if getattr(message, "tool_calls", None):
+            continue
+        content = getattr(message, "content", None)
+        if not isinstance(content, str) or not content:
+            continue
+        opening = "<" + "tool_" + "call>"
+        closing = "<" + "/tool_" + "call>"
+        if opening in content or closing in content:
+            continue
+        output.append(content)
+    return output
+
+
+
 @router.get("/models", response_model=ModelList)
 async def list_models(request: Request):
     return ModelList(
@@ -124,17 +150,12 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
                     }],
                 })
 
-                    async for chunk, metadata in request.app.state.graph.astream(
+                    async for update in request.app.state.graph.astream(
                         {"messages": graph_messages},
                         config=config,
-                        stream_mode="messages",
+                        stream_mode="updates",
                     ):
-                        if metadata.get("langgraph_node") != "assistant":
-                            continue
-
-                        content = chunk.content
-
-                        if isinstance(content, str) and content:
+                        for content in _assistant_text_from_update(update):
                             yield sse({
                                 "id": completion_id,
                                 "object": "chat.completion.chunk",
