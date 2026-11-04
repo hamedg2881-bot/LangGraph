@@ -31,3 +31,11 @@ This repository records the agreed architecture, implementation decisions, deplo
 ## Update policy
 
 After each project change, update the relevant sanitized source/configuration snapshot and the project context, current status, and change log in the same work session.
+
+
+## Agent Model Manager source
+
+- [Agent source tree](source/app/)
+- [Model Manager implementation](source/app/model_manager.py)
+- [Agent Registry schema and queue/lease tables](source/app/registry/schema.sql)
+- [Current implementation and deployment gates](progress/current-status.md)
