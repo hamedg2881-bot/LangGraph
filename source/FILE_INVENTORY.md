@@ -163,3 +163,20 @@ The live `config/agent.env` was not read, copied, or committed. These snapshots 
 
 The queue/lease source is a first implementation checkpoint, not a production-validated Model Manager. Syntax/import checks, PostgreSQL integration tests, concurrency and streaming-disconnect tests, resource-aware admission, Dynamo lifecycle control, GPU memory monitoring, and authenticated Control Center administration remain outstanding. No host source or runtime was changed.
 The queue implementation also enforces configurable per-model queue backpressure (`MODEL_MAX_QUEUE_SIZE`, default 1000). This behavior is committed but has not been runtime-tested.
+
+
+## Agent Model Manager safety correction — 2026-11-04
+
+| Repository path | Purpose | Status |
+|---|---|---|
+| source/app/__init__.py | Explicit root package initializer | Added |
+| source/app/api/__init__.py | Explicit API package initializer | Added |
+| source/app/config/__init__.py | Exports Settings and get_settings for Agent startup imports | Added |
+| source/app/providers/__init__.py | Explicit providers package initializer | Added |
+| source/app/registry/__init__.py | Explicit Registry package initializer | Added |
+| source/app/graph/__init__.py | Exports build_chat_graph for Agent startup imports | Added |
+| source/app/model_manager.py | Fail-closed lease handling, no expiry-based capacity reclamation, heartbeat retry, reconciliation-required state | Updated |
+| source/app/api/routes.py | Explicit streaming queue-timeout SSE response | Updated |
+| source/app/registry/schema.sql | Add reconciliation_required request state with repeatable constraint update | Updated |
+
+These changes are canonical GitHub snapshots only. They have not been synchronized to the DGX host or applied to the live PostgreSQL database.
