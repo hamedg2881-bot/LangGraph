@@ -29,16 +29,16 @@ class ModelManager:
         self.owner = f"{socket.gethostname()}:{uuid.uuid4()}"
 
     async def enqueue(self, model_id: str, priority: int = 0) -> str:
-        request_id = str(uuid.uuid4())
+        request_uuid = uuid.uuid4()
         async with self.database.pool.connection() as connection:
             await connection.execute(
                 """
                 INSERT INTO model_runtime_requests (id, model_id, owner, priority)
                 VALUES (%s, %s, %s, %s)
                 """,
-                (request_id, model_id, self.owner, priority),
+                (request_uuid, model_id, self.owner, priority),
             )
-        return request_id
+        return str(request_uuid)
 
     async def _try_claim(self, request_id: str, model_id: str) -> bool:
         async with self.database.pool.connection() as connection:
@@ -97,7 +97,7 @@ class ModelManager:
                     WHERE id = %s AND state = 'queued'
                     RETURNING id
                     """,
-                    (request_id,),
+                    (uuid.UUID(request_id),),
                 )
                 if await cursor.fetchone() is None:
                     return False
@@ -123,7 +123,7 @@ class ModelManager:
                     WHERE request_id = %s AND owner = %s
                     RETURNING request_id
                     """,
-                    (self.lease_seconds, request_id, self.owner),
+                    (self.lease_seconds, uuid.UUID(request_id), self.owner),
                 )
                 if await cursor.fetchone() is None:
                     return
@@ -133,7 +133,7 @@ class ModelManager:
                     SET heartbeat_at = NOW()
                     WHERE id = %s AND state = 'running'
                     """,
-                    (request_id,),
+                    (uuid.UUID(request_id),),
                 )
 
     async def _finish(self, request_id: str, state: str, error_code: str | None = None):
@@ -141,7 +141,7 @@ class ModelManager:
             async with connection.transaction():
                 await connection.execute(
                     "DELETE FROM model_runtime_leases WHERE request_id = %s AND owner = %s",
-                    (request_id, self.owner),
+                    (uuid.UUID(request_id), self.owner),
                 )
                 await connection.execute(
                     """
@@ -162,7 +162,7 @@ class ModelManager:
                 WHERE id = %s AND state = 'queued'
                 RETURNING id
                 """,
-                (request_id,),
+                (uuid.UUID(request_id),),
             )
             return await cursor.fetchone() is not None
 
