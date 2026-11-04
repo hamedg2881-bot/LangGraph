@@ -18,7 +18,7 @@ button,select{font:inherit;border:1px solid #405777;border-radius:9px;padding:8p
 .tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(245px,1fr));gap:12px}.tile p{margin:4px 0;overflow-wrap:anywhere}
 .pill{display:inline-block;border-radius:20px;padding:2px 9px;background:#263650;font-size:12px}.ok{color:var(--green)}.warn{color:var(--yellow)}.bad{color:var(--red)}
 .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px}
-.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:720px}th,td{text-align:right;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{color:#b9c9df;background:#152238;white-space:nowrap}tr:last-child td{border-bottom:0}
+.table-wrap{overflow:auto;border:1px solid var(--line);border-radius:12px}table{border-collapse:collapse;width:100%;min-width:900px}.actions{white-space:nowrap}.actions button{padding:5px 8px;margin:2px;font-size:12px}th,td{text-align:right;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}th{color:#b9c9df;background:#152238;white-space:nowrap}tr:last-child td{border-bottom:0}
 .cap{display:inline-block;background:#24344e;border-radius:6px;padding:1px 7px;margin:2px;font-size:11px}
 .bar{height:7px;border-radius:9px;background:#27364e;overflow:hidden;margin-top:7px}.bar span{display:block;height:100%;background:var(--blue)}
 .history-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px;margin-top:12px}.chart{border:1px solid var(--line);border-radius:12px;padding:12px}.chart canvas{width:100%;height:180px;display:block}
@@ -50,10 +50,10 @@ button,select{font:inherit;border:1px solid #405777;border-radius:9px;padding:8p
 </section>
 
 <section class="page" id="page-registry">
- <div class="toolbar"><div><h2>Model Registry</h2><div class="note small">منبع حقیقت برای تأیید، فعال‌بودن و قابلیت‌های هر مدل</div></div><button id="registry-refresh">بارگذاری مجدد</button></div>
+ <div class="toolbar"><div><h2>Model Registry</h2><div class="note small">منبع حقیقت برای تأیید، فعال‌بودن و قابلیت‌های هر مدل</div></div><div><button id="registry-sync">کشف مدل‌ها از Dynamo</button> <button id="registry-refresh">بارگذاری مجدد</button></div></div>
  <div id="registry-note" class="note small">در حال اتصال امن سرور به Agent Registry…</div>
- <div class="table-wrap"><table><thead><tr><th>شناسه / نام</th><th>Provider</th><th>تأیید</th><th>فعال</th><th>قابلیت‌ها</th><th>Context</th><th>Runtime</th><th>قابل انتخاب</th><th>آخرین مشاهده</th></tr></thead><tbody id="registry-rows"><tr><td colspan="9" class="empty">در انتظار داده…</td></tr></tbody></table></div>
- <p class="note small">کلید مدیریتی Agent در سرور نگهداری می‌شود و به مرورگر ارسال نمی‌شود. عملیات تغییردهنده تا استقرار احراز هویت مدیریتی مستقل در این پنل فعال نشده‌اند.</p>
+ <div class="table-wrap"><table><thead><tr><th>شناسه / نام</th><th>Provider</th><th>تأیید</th><th>فعال</th><th>قابلیت‌ها</th><th>Context</th><th>Runtime</th><th>قابل انتخاب</th><th>آخرین مشاهده</th><th>عملیات</th></tr></thead><tbody id="registry-rows"><tr><td colspan="9" class="empty">در انتظار داده…</td></tr></tbody></table></div>
+ <p class="note small">عملیات این بخش از طریق سرور به Agent Registry ارسال می‌شوند؛ کلید مدیریتی به مرورگر منتقل نمی‌شود. دسترسی این پنل فعلاً بدون احراز هویت است و باید فقط در شبکه مورداعتماد قرار گیرد.</p>
 </section>
 
 <section class="page" id="page-runtime">
@@ -111,10 +111,41 @@ function renderRuntime(items){
 }
 function renderRegistry(items){
  registryItems=items||[];
- const rows=registryItems.map(m=>'<tr><td><strong>'+esc(m.display_name||m.id)+'</strong><div class="note small">'+esc(m.id)+'</div></td><td>'+esc(m.provider)+'</td><td><span class="'+cls(m.approval_status)+'">'+esc(m.approval_status)+'</span></td><td><span class="'+(m.is_enabled?'ok':'bad')+'">'+(m.is_enabled?'بله':'خیر')+'</span></td><td>'+(m.capabilities||[]).map(c=>'<span class="cap">'+esc(c)+'</span>').join('')+'</td><td>'+esc(fmt(m.context_length))+'</td><td><span class="'+cls(m.runtime_status)+'">'+esc(m.runtime_status||'unknown')+'</span></td><td><span class="'+(m.selectable?'ok':'warn')+'">'+(m.selectable?'بله':'خیر')+'</span></td><td>'+esc(m.last_seen_at?new Date(m.last_seen_at).toLocaleString('fa-IR'):'—')+'</td></tr>').join('');
+ const rows=registryItems.map(m=>'<tr><td><strong>'+esc(m.display_name||m.id)+'</strong><div class="note small">'+esc(m.id)+'</div></td><td>'+esc(m.provider)+'</td><td><span class="'+cls(m.approval_status)+'">'+esc(m.approval_status)+'</span></td><td><span class="'+(m.is_enabled?'ok':'bad')+'">'+(m.is_enabled?'بله':'خیر')+'</span></td><td>'+(m.capabilities||[]).map(c=>'<span class="cap">'+esc(c)+'</span>').join('')+'</td><td>'+esc(fmt(m.context_length))+'</td><td><span class="'+cls(m.runtime_status)+'">'+esc(m.runtime_status||'unknown')+'</span></td><td><span class="'+(m.selectable?'ok':'warn')+'">'+(m.selectable?'بله':'خیر')+'</span></td><td>'+esc(m.last_seen_at?new Date(m.last_seen_at).toLocaleString('fa-IR'):'—')+'</td><td class="actions"><button data-model-action="edit" data-id="'+esc(m.id)+'">ویرایش</button> <button data-model-action="'+(m.approval_status==='approved'?'reject':'approve')+'" data-id="'+esc(m.id)+'">'+(m.approval_status==='approved'?'رد':'تأیید')+'</button> <button data-model-action="'+(m.is_enabled?'disable':'enable')+'" data-id="'+esc(m.id)+'">'+(m.is_enabled?'غیرفعال':'فعال')+'</button></td></tr>').join('');
  $('registry-rows').innerHTML=rows||'<tr><td colspan="9" class="empty">مدلی در Registry ثبت نشده است.</td></tr>';
  $('overview-models').innerHTML=registryItems.slice(0,4).map(m=>card(m.display_name||m.id,m.approval_status,'قابلیت‌ها: '+(m.capabilities||[]).join('، ')+' · فعال: '+(m.is_enabled?'بله':'خیر'))).join('')||'<div class="empty">فهرست Registry خالی است.</div>';
 }
+async function registryAction(path,method='POST',body={}) {
+ const r=await fetch('/api/registry'+path,{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+ const data=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(data.detail||data.title||('HTTP '+r.status));
+ return data;
+}
+async function runModelAction(action,id){
+ const model=registryItems.find(x=>x.id===id);if(!model)return;
+ try{
+  if(action==='edit'){
+   const display_name=prompt('نام نمایشی مدل',model.display_name||model.id);if(display_name===null)return;
+   const rawContext=prompt('حداکثر Context Length',String(model.context_length||''));if(rawContext===null)return;
+   const rawCaps=prompt('قابلیت‌ها با کاما: chat, vision, reasoning, coding, tool_calling',(model.capabilities||[]).join(', '));if(rawCaps===null)return;
+   const context_length=rawContext.trim()===''?null:Number(rawContext);
+   if(context_length!==null&&(!Number.isSafeInteger(context_length)||context_length<1))throw new Error('Context Length نامعتبر است.');
+   await registryAction('/'+encodeURIComponent(id),'PATCH',{display_name:display_name.trim(),context_length,capabilities:rawCaps.split(',').map(x=>x.trim()).filter(Boolean)});
+  }else{
+   const labels={approve:'تأیید',reject:'رد',enable:'فعال‌سازی',disable:'غیرفعال‌سازی'};
+   if(!confirm('آیا از عملیات «'+labels[action]+'» برای '+id+' مطمئن هستید؟'))return;
+   await registryAction('/'+encodeURIComponent(id)+'/'+action);
+  }
+  $('registry-note').textContent='عملیات با موفقیت انجام شد؛ در حال تازه‌سازی…';await loadRegistry();
+ }catch(e){$('registry-note').textContent='خطا در عملیات Registry: '+e.message}
+}
+async function syncRegistry(){
+ const b=$('registry-sync');b.disabled=true;
+ try{const result=await registryAction('/sync');$('registry-note').textContent='کشف تمام شد؛ تعداد مدل‌های دریافت‌شده: '+(result.discovered_count??'نامشخص');await loadRegistry()}
+ catch(e){$('registry-note').textContent='خطا در کشف مدل‌ها: '+e.message}
+ finally{b.disabled=false}
+}
+$('registry-rows').addEventListener('click',e=>{const b=e.target.closest('[data-model-action]');if(b)runModelAction(b.dataset.modelAction,b.dataset.id)});
 async function loadRegistry(){
  $('registry-refresh').disabled=true;$('registry-note').textContent='در حال دریافت Registry…';
  try{const r=await fetch('/api/registry/models',{cache:'no-store'});if(!r.ok){const p=await r.json().catch(()=>({}));throw new Error(p.detail||p.title||('HTTP '+r.status))}
@@ -156,7 +187,7 @@ async function refreshEvents(){
 }
 document.querySelectorAll('[data-page]').forEach(b=>b.addEventListener('click',()=>{document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x===b));document.querySelectorAll('.page').forEach(x=>x.classList.toggle('active',x.id==='page-'+b.dataset.page))}));
 document.querySelectorAll('[data-goto]').forEach(b=>b.addEventListener('click',()=>document.querySelector('[data-page="'+b.dataset.goto+'"]').click()));
-$('refresh').addEventListener('click',refresh);$('registry-refresh').addEventListener('click',loadRegistry);$('events-refresh').addEventListener('click',refreshEvents);
+$('refresh').addEventListener('click',refresh);$('registry-refresh').addEventListener('click',loadRegistry);$('registry-sync').addEventListener('click',syncRegistry);$('events-refresh').addEventListener('click',refreshEvents);
 $('history-range').addEventListener('change',refreshHistory);
 $('refresh').click();loadRegistry();refreshHistory();refreshEvents();
 setInterval(refresh,15000);setInterval(loadRegistry,60000);setInterval(refreshHistory,60000);setInterval(refreshEvents,60000);
