@@ -129,3 +129,11 @@ The canonical Control Center source has been redesigned in GitHub only:
 Security boundary: only read-only Registry access is exposed in this iteration. Registry sync and approval/enablement mutations are intentionally not proxied until a separate Control Center admin authentication/session design is implemented. The service environment must receive `LANGGRAPH_ADMIN_API_KEY` through a protected server-side mechanism; never put it in appsettings committed to GitHub or browser code.
 
 These are GitHub source changes only. No host files, environment variables, build/publish output, systemd service, containers, or models have been changed or restarted. Build and API verification on the DGX host remain pending explicit approval.
+
+## Unified model management design — 2026-11-04
+
+| Repository path | Purpose | Implementation status |
+|---|---|---|
+| architecture/model-management.md | Integrated contract for Registry, durable queue/leases, residency, Dynamo worker lifecycle adapter, Control Center security, monitoring, and deployment gates | Design documented; implementation pending |
+
+The current Agent and Control Center source snapshots do not yet contain Model Manager APIs, durable queue/lease tables, manual Registry registration, or admin-session authentication. Do not mark these as implemented until exact source files, additive migrations, tests, and host verification are complete.
