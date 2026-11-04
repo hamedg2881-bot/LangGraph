@@ -273,3 +273,15 @@ class StreamingUpdateTests(unittest.TestCase):
             _assistant_text_from_update({"assistant": {"messages": [message]}}),
             [],
         )
+
+
+    def test_skips_unparsed_tool_markup(self):
+        from app.api.routes import _assistant_text_from_update
+
+        opening = "<" + "tool_" + "call>"
+        closing = "<" + "/tool_" + "call>"
+        message = AIMessage(content=opening + "raw markup" + closing)
+        self.assertEqual(
+            _assistant_text_from_update({"assistant": {"messages": [message]}}),
+            [],
+        )
