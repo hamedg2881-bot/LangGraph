@@ -59,3 +59,17 @@
 34. Keep Open WebUI limited to the logical Auto model.
 35. Existing Control Center profile definitions are legacy and currently refer to qwen-coder/qwen36-vl health URLs on ports 8010/8012. Do not treat those URLs as authoritative for the current Dynamo runtime on port 8013.
 36. Do not change the running Control Center or model workers until the existing source/UI and current APIs have been inspected and a focused change is approved.
+
+
+## 2026-11-04 — Unified model management contract
+
+37. Model Registry, Model Manager, Runtime Management, and Monitoring are one integrated control-plane deliverable, with responsibilities separated across Agent, Dynamo, and the existing Control Center.
+38. Registry manual registration is metadata-only and defaults to pending/disabled; discovery must never download, install, load, activate, approve, enable, or overwrite curated policy.
+39. Every inference must acquire a request lease and release it only after the full inference/stream has actually stopped; no active lease may be forcibly interrupted for eviction.
+40. Queue records and request leases must be durable in additive tables in the existing PostgreSQL database; never modify LangGraph checkpointer tables.
+41. Model residency is independent from approval, enablement, and Dynamo discovery. Memory admission must reserve headroom for OS, runtime, KV cache, vision activations, and transient load peaks.
+42. Worker eviction is drain-first and permitted only after active leases and worker operations reach zero and the runtime confirms safe idle state.
+43. Do not assume a bare-metal Dynamo 1.6.1 load/unload HTTP API from Kubernetes Operator/Planner concepts. Validate the deployed lifecycle control surface and implement a gated adapter; no direct Docker/systemd stop/start from the UI.
+44. The existing Control Center has no admin-session authentication. Registry and Model Manager mutations must not be exposed through it until server-side authentication, CSRF protections as applicable, validation, and audit logging are implemented.
+45. Monitoring may show only measured values from real APIs/telemetry; unimplemented queue, residency, and lifecycle states must be explicitly unavailable, never simulated.
+46. The four areas must be delivered as one coherent integration, but implementation is gated by exact source capture, additive DB migration, queue/lease tests, Dynamo lifecycle validation, and authenticated UI integration.
