@@ -141,6 +141,13 @@ app.MapPost("/api/registry/{id}/{action}", async (string id, string action, IHtt
 app.MapPatch("/api/registry/{id}", async (string id, JsonNode payload, IHttpClientFactory factory) =>
     await ProxyRegistry(factory, HttpMethod.Patch, $"/{Uri.EscapeDataString(id)}", payload));
 
+app.MapGet("/api/model-manager/status", async (IHttpClientFactory factory) =>
+    await ProxyAgentAdmin(factory, HttpMethod.Get, "/admin/model-manager/status", null));
+
+app.MapPost("/api/model-manager/queue/{id}/cancel", async (string id, IHttpClientFactory factory) =>
+    await ProxyAgentAdmin(factory, HttpMethod.Post,
+        $"/admin/model-manager/queue/{Uri.EscapeDataString(id)}/cancel", new JsonObject()));
+
 app.MapGet("/api/history", (int? hours) =>
 {
     var requestedHours = Math.Clamp(hours ?? 24, 1, 720);
@@ -356,6 +363,39 @@ static (int exitCode, string stdout) awaitRunNvidia()
 
 static double? ParseDouble(string value) =>
     double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var result) ? result : null;
+
+static async Task<IResult> ProxyAgentAdmin(
+    IHttpClientFactory factory, HttpMethod method, string path, JsonNode? payload)
+{
+    var key = Environment.GetEnvironmentVariable("LANGGRAPH_ADMIN_API_KEY");
+    if (string.IsNullOrWhiteSpace(key))
+        return Results.Problem(title: "Agent administration is not configured",
+            detail: "The server-side Agent Registry credential is missing.",
+            statusCode: StatusCodes.Status503ServiceUnavailable);
+
+    var client = factory.CreateClient("platform");
+    using var request = new HttpRequestMessage(method,
+        $"{BaseUrl("LANGGRAPH_AGENT_URL", "http://127.0.0.1:8100")}{path}");
+    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", key);
+    if (payload is not null)
+        request.Content = new StringContent(payload.ToJsonString(), System.Text.Encoding.UTF8, "application/json");
+
+    try
+    {
+        using var response = await client.SendAsync(request);
+        var body = await response.Content.ReadAsStringAsync();
+        return Results.Content(body, response.Content.Headers.ContentType?.ToString() ?? "application/json",
+            System.Text.Encoding.UTF8, (int)response.StatusCode);
+    }
+    catch (TaskCanceledException)
+    {
+        return Results.Problem(title: "Agent administration timeout", statusCode: StatusCodes.Status504GatewayTimeout);
+    }
+    catch
+    {
+        return Results.Problem(title: "Agent administration unavailable", statusCode: StatusCodes.Status502BadGateway);
+    }
+}
 
 static async Task<IResult> ProxyRegistry(
     IHttpClientFactory factory, HttpMethod method, string path, JsonNode? payload)
