@@ -152,6 +152,20 @@ class ModelManager:
                     (state, error_code, request_id, self.owner),
                 )
 
+
+    async def cancel_request(self, request_id: str):
+        async with self.database.pool.connection() as connection:
+            cursor = await connection.execute(
+                """
+                UPDATE model_runtime_requests
+                SET state = 'cancelled', finished_at = NOW()
+                WHERE id = %s AND state = 'queued'
+                RETURNING id
+                """,
+                (request_id,),
+            )
+            return await cursor.fetchone() is not None
+
     async def cancel_queued(self, request_id: str):
         async with self.database.pool.connection() as connection:
             cursor = await connection.execute(
