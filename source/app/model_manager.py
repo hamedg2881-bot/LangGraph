@@ -11,6 +11,10 @@ class ModelQueueFull(Exception):
     pass
 
 
+class ModelRequestCancelled(Exception):
+    pass
+
+
 class ModelLease:
     def __init__(self, manager, request_id: str, model_id: str):
         self.manager = manager
@@ -135,6 +139,15 @@ class ModelManager:
                 )
                 return True
 
+    async def _is_cancelled(self, request_id: str) -> bool:
+        async with self.database.pool.connection() as connection:
+            cursor = await connection.execute(
+                "SELECT state FROM model_runtime_requests WHERE id = %s",
+                (uuid.UUID(request_id),),
+            )
+            row = await cursor.fetchone()
+            return row is None or row[0] == "cancelled"
+
     async def _heartbeat(self, request_id: str):
         while True:
             await asyncio.sleep(self.lease_seconds / 3)
@@ -213,6 +226,8 @@ class ModelManager:
                 if await self._try_claim(request_id, model_id):
                     claimed = True
                     break
+                if await self._is_cancelled(request_id):
+                    raise ModelRequestCancelled("Queued request was cancelled")
                 await asyncio.sleep(self.poll_seconds)
             if not claimed:
                 await self.cancel_queued(request_id)
