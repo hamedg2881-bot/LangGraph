@@ -68,12 +68,36 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
                 detail=f"Unsupported message role: {item.role}",
             )
 
+    system_messages = [
+        message.content for message in messages
+        if isinstance(message, SystemMessage)
+    ]
+    conversation_messages = [
+        message for message in messages
+        if not isinstance(message, SystemMessage)
+    ]
+
     config = {
+        "recursion_limit": 12,
         "configurable": {
             "thread_id": thread_id,
             "model_id": selected_model_id,
+            "request_system_messages": system_messages,
         }
     }
+
+    checkpoint = await request.app.state.graph.aget_state(config)
+    if checkpoint and checkpoint.values.get("messages"):
+        latest_user_message = next(
+            (
+                message for message in reversed(conversation_messages)
+                if isinstance(message, HumanMessage)
+            ),
+            None,
+        )
+        graph_messages = [latest_user_message] if latest_user_message else []
+    else:
+        graph_messages = conversation_messages
     completion_id = f"chatcmpl-{uuid.uuid4().hex}"
     created = int(time.time())
 
@@ -101,7 +125,7 @@ async def chat_completions(payload: ChatCompletionRequest, request: Request):
                 })
 
                     async for chunk, metadata in request.app.state.graph.astream(
-                        {"messages": messages},
+                        {"messages": graph_messages},
                         config=config,
                         stream_mode="messages",
                     ):
