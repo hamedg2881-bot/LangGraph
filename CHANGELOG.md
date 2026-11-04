@@ -138,3 +138,4 @@
 - Updated source inventory, current status, and roadmap.
 - All changes are committed to GitHub only. They have not been compiled, tested against the host database, deployed, or restarted. No host or runtime state was changed.
 - Added configurable per-model queue backpressure; full queues return HTTP 429 or an SSE rate-limit error without starting inference.
+- Admin cancellation now marks only queued requests; the waiting chat caller detects cancellation promptly. Running inference remains untouched. This behavior is source-committed but not yet integration-tested.
